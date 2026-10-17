@@ -44,7 +44,7 @@ export default async function ConfigPage() {
         </CardBody></Card>
         <Card className="xl:col-span-2"><CardHeader title="Modèles de notification" description="Variables : {{prenom}}, {{titre}}, {{message}}, {{lien}}." /><CardBody className="grid gap-4 md:grid-cols-2">
           {templates.map((t) => (
-            <ApiForm key={t.id} action="/api/v1/admin/template-save" successMessage="Modèle enregistré." className="space-y-2 rounded-xl border border-line p-3" transform={(d) => ({ ...d, id: t.id })}>
+            <ApiForm key={t.id} action="/api/v1/admin/template-save" successMessage="Modèle enregistré." className="space-y-2 rounded-xl border border-line p-3" extra={{ id: t.id }}>
               <p className="text-sm font-semibold">{t.type} · {t.channel} · {t.locale}</p>
               <Input name="subject" defaultValue={t.subject} aria-label="Objet" />
               <Textarea name="body" defaultValue={t.body} rows={4} aria-label="Corps" />

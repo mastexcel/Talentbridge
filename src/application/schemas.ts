@@ -4,12 +4,43 @@
  */
 import { z } from "zod";
 
+/** Messages de validation par défaut en français (les messages explicites restent prioritaires). */
+const frenchErrorMap: z.ZodErrorMap = (issue, ctx) => {
+  switch (issue.code) {
+    case z.ZodIssueCode.too_small:
+      if (issue.type === "string") return { message: `${issue.minimum} caractère(s) minimum.` };
+      if (issue.type === "number") return { message: `La valeur doit être supérieure ou égale à ${issue.minimum}.` };
+      if (issue.type === "array") return { message: `Sélectionnez au moins ${issue.minimum} élément(s).` };
+      break;
+    case z.ZodIssueCode.too_big:
+      if (issue.type === "string") return { message: `${issue.maximum} caractères maximum.` };
+      if (issue.type === "number") return { message: `La valeur doit être inférieure ou égale à ${issue.maximum}.` };
+      if (issue.type === "array") return { message: `${issue.maximum} élément(s) maximum.` };
+      break;
+    case z.ZodIssueCode.invalid_type:
+      return { message: issue.received === "undefined" || issue.received === "null" ? "Champ requis." : "Valeur invalide." };
+    case z.ZodIssueCode.invalid_enum_value:
+      return { message: "Choix invalide." };
+    case z.ZodIssueCode.invalid_date:
+      return { message: "Date invalide." };
+    case z.ZodIssueCode.invalid_string:
+      if (issue.validation === "email") return { message: "Adresse email invalide." };
+      if (issue.validation === "url") return { message: "Adresse web invalide." };
+      return { message: "Format invalide." };
+  }
+  return { message: ctx.defaultError };
+};
+z.setErrorMap(frenchErrorMap);
+
+/** Nombre facultatif : un champ vide vaut null (et non 0). */
+const optionalNumber = (schema: z.ZodNumber) => z.preprocess((v) => (v === "" || v === undefined ? null : v), z.union([z.null(), z.coerce.number().pipe(schema)]));
+
 const trimmed = (min: number, max: number, msg?: string) => z.string().trim().min(min, msg ?? `${min} caractères minimum.`).max(max, `${max} caractères maximum.`);
 const optionalText = (max: number) => z.string().trim().max(max).optional().nullable().transform((v) => (v ? v : null));
 const country = z.string().trim().length(2, "Pays invalide.").transform((v) => v.toUpperCase());
 const currency = z.string().trim().length(3).transform((v) => v.toUpperCase());
 const dateInput = z.coerce.date();
-const optionalDate = z.union([z.literal(""), z.null(), z.undefined(), z.coerce.date()]).transform((v) => (v instanceof Date && !isNaN(v.getTime()) ? v : null));
+export const optionalDate = z.union([z.literal(""), z.null(), z.undefined(), z.coerce.date()]).transform((v) => (v instanceof Date && !isNaN(v.getTime()) ? v : null));
 
 export const password = z
   .string()
@@ -92,7 +123,7 @@ export const expertProfileSchema = z.object({
   mobility: z.enum(["LOCAL", "NATIONAL", "REGIONAL", "INTERNATIONAL"]),
   remoteOk: z.boolean(),
   mobilityCountries: z.array(z.string().length(2)).max(54).default([]),
-  dailyRate: z.coerce.number().min(0).max(100_000_000).optional().nullable(),
+  dailyRate: optionalNumber(z.number().min(0).max(100_000_000)),
   rateCurrency: currency.optional().nullable(),
   missionPreferences: optionalText(1000),
   visibility: z.enum(["PUBLIC", "MEMBERS", "PRIVATE"]),
@@ -117,7 +148,7 @@ export const qualificationSchema = z.object({
   kind: z.enum(["DEGREE", "CERTIFICATION"]),
   title: trimmed(2, 160),
   institution: trimmed(2, 160),
-  year: z.coerce.number().int().min(1950).max(2100).optional().nullable(),
+  year: optionalNumber(z.number().int().min(1950).max(2100)),
   fileId: optionalText(40),
 });
 
@@ -128,14 +159,14 @@ export const referenceSchema = z.object({
   contactPhone: optionalText(30),
   relation: optionalText(120),
   missionTitle: optionalText(200),
-  year: z.coerce.number().int().min(1950).max(2100).optional().nullable(),
+  year: optionalNumber(z.number().int().min(1950).max(2100)),
 });
 
 export const portfolioSchema = z.object({
   title: trimmed(2, 160),
   description: optionalText(1000),
   url: z.union([z.literal(""), z.null(), z.undefined(), z.string().trim().url()]).transform((v) => v || null),
-  year: z.coerce.number().int().min(1950).max(2100).optional().nullable(),
+  year: optionalNumber(z.number().int().min(1950).max(2100)),
 });
 
 export const slotSchema = z
@@ -174,10 +205,10 @@ export const missionSchema = z
     countryCode: country,
     city: optionalText(80),
     workMode: z.enum(["ONSITE", "REMOTE", "HYBRID"]),
-    durationDays: z.coerce.number().int().min(1).max(1500).optional().nullable(),
+    durationDays: optionalNumber(z.number().int().min(1).max(1500)),
     startDate: optionalDate,
-    budgetMin: z.coerce.number().min(0).optional().nullable(),
-    budgetMax: z.coerce.number().min(0).optional().nullable(),
+    budgetMin: optionalNumber(z.number().min(0)),
+    budgetMax: optionalNumber(z.number().min(0)),
     currency,
     applicationDeadline: optionalDate,
     visibility: z.enum(["PUBLIC", "MEMBERS", "INVITE_ONLY"]),
@@ -196,7 +227,7 @@ export const missionSearchSchema = z.object({
 
 export const applicationSchema = z.object({
   coverLetter: trimmed(50, 6000, "Proposition technique : 50 caractères minimum."),
-  proposedRate: z.coerce.number().min(0).optional().nullable(),
+  proposedRate: optionalNumber(z.number().min(0)),
   currency: currency.optional().nullable(),
   availableFrom: optionalDate,
   technicalFileId: optionalText(40),
@@ -239,7 +270,7 @@ export const matchingWeightsSchema = z.object({
 
 export const teamRequestSchema = z.object({
   missionId: z.string().min(1),
-  budgetMax: z.coerce.number().min(0).optional().nullable(),
+  budgetMax: optionalNumber(z.number().min(0)),
   roles: z
     .array(z.object({ key: z.string().min(1).max(40), label: trimmed(2, 80), skillIds: z.array(z.string()).min(1).max(10), days: z.coerce.number().int().min(1).max(1000) }))
     .min(1)
@@ -331,10 +362,10 @@ export const planPriceSchema = z.object({
 export const couponSchema = z
   .object({
     code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{3,30}$/),
-    percentOff: z.coerce.number().min(0).max(100).optional().nullable(),
-    amountOff: z.coerce.number().min(0).optional().nullable(),
+    percentOff: optionalNumber(z.number().min(0).max(100)),
+    amountOff: optionalNumber(z.number().min(0)),
     currency: currency.optional().nullable(),
-    maxRedemptions: z.coerce.number().int().min(1).optional().nullable(),
+    maxRedemptions: optionalNumber(z.number().int().min(1)),
     validUntil: optionalDate,
   })
   .refine((v) => !!v.percentOff !== !!v.amountOff, { message: "Renseignez un pourcentage OU un montant.", path: ["percentOff"] });
@@ -365,7 +396,7 @@ export const tenderSchema = z.object({
   domainId: optionalText(40),
   description: trimmed(20, 10000),
   eligibility: optionalText(4000),
-  budget: z.coerce.number().min(0).optional().nullable(),
+  budget: optionalNumber(z.number().min(0)),
   currency: currency.optional().nullable(),
   deadline: dateInput,
   sourceUrl: z.union([z.literal(""), z.null(), z.undefined(), z.string().trim().url()]).transform((v) => v || null),

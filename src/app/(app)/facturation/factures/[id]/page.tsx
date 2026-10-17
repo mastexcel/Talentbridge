@@ -56,7 +56,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                 {p.refunds.map((r) => <p key={r.id} className="text-xs">Remboursement {formatMoney(r.amountMinor, p.currency)} : {r.status}</p>)}
                 {["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(p.status) && (
                   <details className="mt-2"><summary className="cursor-pointer text-xs text-slate">Demander un remboursement</summary>
-                    <ApiForm action="/api/v1/billing/refund" submitLabel="Envoyer la demande" successMessage="Demande transmise à la finance." className="mt-2 space-y-2" transform={(d) => ({ ...d, paymentId: p.id })}>
+                    <ApiForm action="/api/v1/billing/refund" submitLabel="Envoyer la demande" successMessage="Demande transmise à la finance." className="mt-2 space-y-2" extra={{ paymentId: p.id }}>
                       <Field label="Montant" htmlFor={`ra-${p.id}`}><Input id={`ra-${p.id}`} name="amount" type="number" data-type="number" /></Field>
                       <Field label="Motif" htmlFor={`rr-${p.id}`}><Input id={`rr-${p.id}`} name="reason" /></Field>
                     </ApiForm>

@@ -53,6 +53,7 @@ export function ApiForm({
   refresh = true,
   className,
   transform,
+  extra,
   onSuccess,
   submitVariant = "primary",
   hideSubmit,
@@ -65,7 +66,10 @@ export function ApiForm({
   redirectTo?: string | ((data: Record<string, unknown>) => string);
   refresh?: boolean;
   className?: string;
+  /** Réservé aux composants client (une fonction ne traverse pas la frontière serveur/client). */
   transform?: (data: Record<string, unknown>) => unknown;
+  /** Champs ajoutés au corps envoyé (utilisable depuis un composant serveur). */
+  extra?: Record<string, unknown>;
   onSuccess?: (data: Record<string, unknown>) => void;
   submitVariant?: "primary" | "secondary" | "success" | "outline" | "danger";
   hideSubmit?: boolean;
@@ -83,7 +87,7 @@ export function ApiForm({
     setError(null);
     setBusy(true);
     try {
-      const raw = serializeForm(form);
+      const raw = { ...serializeForm(form), ...(extra ?? {}) };
       const data = await api<Record<string, unknown>>(action, { method, body: transform ? transform(raw) : raw });
       if (successMessage) toast("success", successMessage);
       onSuccess?.(data);

@@ -20,13 +20,13 @@ export default defineConfig({
     launchOptions: process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : undefined,
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: /responsive\.spec\.ts/ },
     { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /responsive\.spec\.ts/ },
   ],
   webServer: {
     command: `npx next start -p ${PORT}`,
     url: `http://localhost:${PORT}/api/v1/health`,
     reuseExistingServer: true,
-    env: { APP_URL: `http://localhost:${PORT}` },
+    env: { APP_URL: `http://localhost:${PORT}`, AUTH_RATE_LIMIT_FACTOR: "50", ALLOW_MOCK_PAYMENTS: "true" },
   },
 });

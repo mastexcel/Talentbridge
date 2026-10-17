@@ -29,5 +29,7 @@ export function Button({ className, variant, size, ...props }: React.ButtonHTMLA
 }
 
 export function ButtonLink({ className, variant, size, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & Variants & { href: string }) {
+  // Téléchargements / routes API : lien simple, sans préchargement par le routeur.
+  if (href.startsWith("/api/")) return <a href={href} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
   return <Link href={href} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
 }

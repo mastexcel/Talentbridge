@@ -1,3 +1,4 @@
+import { DomainError } from "@/domain/errors";
 import { env } from "../env";
 import { MockPaymentProvider } from "./mock-provider";
 import { BankTransferProvider } from "./bank-transfer";
@@ -20,12 +21,12 @@ export function getPaymentProvider(name?: string): PaymentProvider {
   const selected = name ?? env().PAYMENT_PROVIDER;
   switch (selected) {
     case "mock":
-      if (!mockAllowed()) throw new Error("Le prestataire simulé est désactivé en production.");
+      if (!mockAllowed()) throw new DomainError("NOT_AVAILABLE", "Le paiement en ligne n'est pas encore activé : aucun prestataire réel n'est configuré. Choisissez le virement bancaire ou contactez-nous.");
       return new MockPaymentProvider(env().PAYMENT_WEBHOOK_SECRET);
     case "bank_transfer":
       return new BankTransferProvider(BANK_INSTRUCTIONS);
     default:
-      throw new Error(`Prestataire de paiement inconnu ou non configuré : ${selected}`);
+      throw new DomainError("NOT_AVAILABLE", `Prestataire de paiement inconnu ou non configuré : ${selected}`);
   }
 }
 

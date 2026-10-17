@@ -38,7 +38,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHeader title="Mon profil d'expert" description="Plus votre profil est complet et vérifié, plus il est recommandé aux organisations." />
-      {sp.bienvenue && <Alert tone="success" title="Bienvenue sur Talent Bridge !" className="mb-6">Complétez votre profil (60 % minimum) pour le soumettre à vérification et être visible dans l'annuaire.</Alert>}
+      {sp.bienvenue && <Alert tone="success" title="Bienvenue sur Talent Bridge !" className="mb-6">Complétez votre profil (60 % minimum) pour le soumettre à vérification. Votre profil est privé par défaut : choisissez « Publique » ou « Membres connectés » dans la visibilité pour apparaître dans l'annuaire et les recommandations.</Alert>}
+      {!sp.bienvenue && p.visibility === "PRIVATE" && <Alert tone="info" className="mb-6">Votre profil est privé : il n'apparaît ni dans l'annuaire ni dans les recommandations du matching.</Alert>}
       <Card className="mb-6">
         <CardBody>
           <div className="flex justify-between text-sm font-semibold"><span>Complétude du profil</span><span>{completeness.score} %</span></div>

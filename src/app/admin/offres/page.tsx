@@ -28,7 +28,7 @@ export default async function OffersAdmin() {
           <Card key={p.id}>
             <CardHeader title={<span className="flex flex-wrap items-center gap-2">{p.name} <Badge>{p.code}</Badge><Badge tone={p.audience === "EXPERT" ? "orange" : "bordeaux"}>{p.audience === "EXPERT" ? "Experts" : "Organisations"}</Badge>{!p.isActive && <Badge tone="red">Inactive</Badge>}</span>} description={`${p._count.subscriptions} souscription(s)`} />
             <CardBody className="grid gap-6 lg:grid-cols-3">
-              <ApiForm action="/api/v1/admin/plan-save" successMessage="Offre enregistrée." className="space-y-2" transform={(d) => ({ ...d, id: p.id })}>
+              <ApiForm action="/api/v1/admin/plan-save" successMessage="Offre enregistrée." className="space-y-2" extra={{ id: p.id }}>
                 <Field label="Code" htmlFor={`c-${p.id}`}><Input id={`c-${p.id}`} name="code" defaultValue={p.code} /></Field>
                 <Field label="Nom" htmlFor={`n-${p.id}`}><Input id={`n-${p.id}`} name="name" defaultValue={p.name} /></Field>
                 <Field label="Audience" htmlFor={`a-${p.id}`}><Select id={`a-${p.id}`} name="audience" defaultValue={p.audience}><option value="EXPERT">Experts</option><option value="ORGANIZATION">Organisations</option></Select></Field>
@@ -39,7 +39,7 @@ export default async function OffersAdmin() {
               <div className="space-y-2 text-sm">
                 <p className="font-semibold">Prix</p>
                 {p.prices.map((pr) => <div key={pr.id} className="flex items-center justify-between"><span className={pr.isActive ? "" : "text-slate line-through"}>{formatMoney(pr.amountMinor, pr.currency)} {INTERVAL[pr.interval]}{pr.countryCode ? ` (${pr.countryCode})` : ""}</span><ActionButton action="/api/v1/admin/price-toggle" body={{ id: pr.id, isActive: !pr.isActive }} variant="ghost" successMessage="Prix mis à jour.">{pr.isActive ? "Désactiver" : "Réactiver"}</ActionButton></div>)}
-                <ApiForm action="/api/v1/admin/price-add" submitLabel="Ajouter un prix" successMessage="Prix ajouté." className="grid grid-cols-2 gap-2 border-t border-line pt-2" transform={(d) => ({ ...d, planId: p.id })}>
+                <ApiForm action="/api/v1/admin/price-add" submitLabel="Ajouter un prix" successMessage="Prix ajouté." className="grid grid-cols-2 gap-2 border-t border-line pt-2" extra={{ planId: p.id }}>
                   <Input name="amount" type="number" data-type="number" placeholder="Montant" aria-label="Montant" />
                   <Select name="currency" aria-label="Devise"><option>XOF</option><option>XAF</option><option>EUR</option><option>USD</option><option>GHS</option><option>NGN</option><option>KES</option><option>MAD</option></Select>
                   <Select name="interval" aria-label="Périodicité"><option value="MONTH">Mensuel</option><option value="YEAR">Annuel</option><option value="ONE_TIME">Unique</option></Select>
@@ -51,9 +51,9 @@ export default async function OffersAdmin() {
                 {features.map((f) => {
                   const pf = p.features.find((x) => x.featureId === f.id);
                   return (
-                    <ApiForm key={f.id} action="/api/v1/admin/plan-feature" submitLabel="OK" successMessage="Fonctionnalité mise à jour." className="flex items-center gap-2" transform={(d) => ({ planId: p.id, featureCode: f.code, included: d.included, limit: d.limit === "" || d.limit == null ? null : Number(d.limit) })}>
+                    <ApiForm key={f.id} action="/api/v1/admin/plan-feature" submitLabel="OK" successMessage="Fonctionnalité mise à jour." className="flex items-center gap-2" extra={{ planId: p.id, featureCode: f.code }}>
                       <Checkbox name="included" defaultChecked={!!pf} label={f.name} className="flex-1" />
-                      <Input name="limit" type="number" defaultValue={pf?.limit ?? ""} placeholder="∞" className="h-8 w-16" aria-label={`Limite ${f.name}`} />
+                      <Input name="limit" type="number" data-type="number" defaultValue={pf?.limit ?? ""} placeholder="∞" className="h-8 w-16" aria-label={`Limite ${f.name}`} />
                     </ApiForm>
                   );
                 })}

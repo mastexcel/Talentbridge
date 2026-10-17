@@ -26,7 +26,7 @@ export default async function ContentAdmin({ searchParams }: { searchParams: Pro
           const b = byKey.get(key);
           return (
             <Card key={key}><CardHeader title={label} description={b ? `Modifié le ${b.updatedAt.toLocaleDateString("fr-FR")}` : "Non rédigé dans cette langue"} /><CardBody>
-              <ApiForm action="/api/v1/admin/cms-block" successMessage="Contenu publié." className="space-y-2" transform={(d) => ({ ...d, key, locale })}>
+              <ApiForm action="/api/v1/admin/cms-block" successMessage="Contenu publié." className="space-y-2" extra={{ key, locale }}>
                 <Input name="title" defaultValue={b?.title ?? ""} placeholder="Titre" aria-label="Titre" />
                 <Textarea name="body" defaultValue={b?.body ?? ""} rows={key.startsWith("legal") ? 10 : 4} aria-label="Texte" />
               </ApiForm>
@@ -35,7 +35,7 @@ export default async function ContentAdmin({ searchParams }: { searchParams: Pro
         })}
         <Card><CardHeader title="Chiffres clés de l'accueil" description="« Calculé » = requête sur les données réelles. « Saisi » = valeur manuelle, à marquer « Démo » si non réelle." /><CardBody className="space-y-3">
           {stats.map((s) => (
-            <ApiForm key={s.id} action="/api/v1/admin/stat-update" submitLabel="OK" successMessage="Chiffre mis à jour." className="grid grid-cols-2 gap-2 rounded-xl border border-line p-2 text-sm" transform={(d) => ({ ...d, id: s.id })}>
+            <ApiForm key={s.id} action="/api/v1/admin/stat-update" submitLabel="OK" successMessage="Chiffre mis à jour." className="grid grid-cols-2 gap-2 rounded-xl border border-line p-2 text-sm" extra={{ id: s.id }}>
               <Input name="label" defaultValue={s.label} aria-label="Libellé" />
               <Select name="source" defaultValue={s.source} aria-label="Source"><option value="LIVE">Calculé ({s.metric})</option><option value="MANUAL">Saisi</option></Select>
               <Input name="manualValue" defaultValue={s.manualValue ?? ""} placeholder="Valeur saisie" aria-label="Valeur" />
@@ -45,7 +45,7 @@ export default async function ContentAdmin({ searchParams }: { searchParams: Pro
         </CardBody></Card>
         <Card><CardHeader title="Témoignages" description="« Vérifié » uniquement avec l'accord écrit de l'auteur." /><CardBody className="space-y-3">
           {testimonials.map((t) => (
-            <ApiForm key={t.id} action="/api/v1/admin/testimonial-save" submitLabel="OK" successMessage="Témoignage enregistré." className="space-y-1 rounded-xl border border-line p-2 text-sm" transform={(d) => ({ ...d, id: t.id })}>
+            <ApiForm key={t.id} action="/api/v1/admin/testimonial-save" submitLabel="OK" successMessage="Témoignage enregistré." className="space-y-1 rounded-xl border border-line p-2 text-sm" extra={{ id: t.id }}>
               <div className="grid grid-cols-2 gap-1"><Input name="authorName" defaultValue={t.authorName} aria-label="Auteur" /><Input name="authorRole" defaultValue={t.authorRole} aria-label="Fonction" /></div>
               <Input name="organization" defaultValue={t.organization ?? ""} aria-label="Organisation" />
               <Textarea name="quote" defaultValue={t.quote} aria-label="Citation" />

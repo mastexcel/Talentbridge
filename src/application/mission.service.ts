@@ -14,6 +14,7 @@ import type { SessionUser } from "./auth.service";
 import { requireOrgPermission, requireExpert } from "./access";
 import { audit } from "./audit.service";
 import { notify } from "./notification.service";
+import { assertFeature } from "./billing.service";
 
 export const MISSION_PAGE_SIZE = 10;
 
@@ -88,6 +89,8 @@ export async function changeMissionStatus(user: SessionUser, missionId: string, 
     if (reqs === 0) throw new DomainError("VALIDATION", "Ajoutez au moins une compétence requise avant publication.");
     const org = await db.organization.findUniqueOrThrow({ where: { id: mission.organizationId }, select: { status: true } });
     if (org.status === "SUSPENDED" || org.status === "REJECTED") throw new DomainError("FORBIDDEN", "Votre organisation ne peut pas publier de mission (statut : non validée).");
+    const active = await db.mission.count({ where: { organizationId: mission.organizationId, status: { notIn: ["CLOSED", "CANCELLED", "DRAFT"] } } });
+    await assertFeature({ userId: null, organizationId: mission.organizationId }, "missions.active", active, "Missions publiées simultanément", db);
   }
   await inTransaction(db, async (tx) => {
     await tx.mission.update({

@@ -6,6 +6,7 @@
  *  - un seul axe Y ; traits fins ; barres à extrémités arrondies ; grille discrète ;
  *  - info-bulle au survol ; légende dès 2 séries ; tableau des données accessible sous chaque graphique.
  */
+import { formatMoney } from "@/domain/money";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const SERIES_COLORS = ["#A13A4A", "#5E8A1E", "#2F6FB5", "#D4640F", "#7C5CB8"] as const;
@@ -16,6 +17,8 @@ type Datum = Record<string, string | number | null>;
 type Series = { key: string; label: string };
 
 const fmtNumber = (v: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(v).replace(/ /g, " ");
+/** Formateur : montant (si `currency`, montants en unités mineures) ou nombre. Les fonctions ne traversent pas la frontière serveur/client. */
+const formatter = (currency?: string) => (currency ? (v: number) => formatMoney(v, currency) : fmtNumber);
 
 function DataTable({ data, xKey, series, format }: { data: Datum[]; xKey: string; series: Series[]; format: (v: number) => string }) {
   return (
@@ -39,7 +42,8 @@ function TooltipBox({ active, payload, label, format }: { active?: boolean; payl
   );
 }
 
-export function BarChartCard({ data, xKey, series, height = 260, format = fmtNumber, layout = "horizontal", stacked }: { data: Datum[]; xKey: string; series: Series[]; height?: number; format?: (v: number) => string; layout?: "horizontal" | "vertical"; stacked?: boolean }) {
+export function BarChartCard({ data, xKey, series, height = 260, currency, layout = "horizontal", stacked }: { data: Datum[]; xKey: string; series: Series[]; height?: number; currency?: string; layout?: "horizontal" | "vertical"; stacked?: boolean }) {
+  const format = formatter(currency);
   if (!data.length) return <p className="py-10 text-center text-sm text-slate">Aucune donnée sur la période.</p>;
   const vertical = layout === "vertical";
   return (
@@ -59,7 +63,8 @@ export function BarChartCard({ data, xKey, series, height = 260, format = fmtNum
   );
 }
 
-export function LineChartCard({ data, xKey, series, height = 260, format = fmtNumber }: { data: Datum[]; xKey: string; series: Series[]; height?: number; format?: (v: number) => string }) {
+export function LineChartCard({ data, xKey, series, height = 260, currency }: { data: Datum[]; xKey: string; series: Series[]; height?: number; currency?: string }) {
+  const format = formatter(currency);
   if (!data.length) return <p className="py-10 text-center text-sm text-slate">Aucune donnée sur la période.</p>;
   return (
     <div>
@@ -79,7 +84,8 @@ export function LineChartCard({ data, xKey, series, height = 260, format = fmtNu
 }
 
 /** Répartition (≤ 5 parts, au-delà regroupées dans « Autres ») avec étiquettes directes en légende. */
-export function DonutCard({ data, height = 240, format = fmtNumber }: { data: { label: string; value: number }[]; height?: number; format?: (v: number) => string }) {
+export function DonutCard({ data, height = 240, currency }: { data: { label: string; value: number }[]; height?: number; currency?: string }) {
+  const format = formatter(currency);
   const sorted = [...data].sort((a, b) => b.value - a.value);
   const parts = sorted.length > 5 ? [...sorted.slice(0, 4), { label: "Autres", value: sorted.slice(4).reduce((s, d) => s + d.value, 0) }] : sorted;
   const total = parts.reduce((s, d) => s + d.value, 0);

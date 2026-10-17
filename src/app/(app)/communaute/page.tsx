@@ -46,7 +46,7 @@ export default async function CommunityPage({ searchParams }: { searchParams: Pr
                   <ActionButton action="/api/v1/community/report" body={{ targetType: "POST", targetId: p.id }} prompt={{ key: "reason", label: "Motif du signalement", required: true }} variant="ghost" successMessage="Signalement transmis aux modérateurs.">Signaler</ActionButton>
                 </div>
                 {p.comments.length > 0 && <ul className="space-y-1 rounded-xl bg-mist p-3 text-sm">{p.comments.map((c) => <li key={c.id}><strong>{c.author.firstName} {c.author.lastName}</strong> : {c.body}</li>)}</ul>}
-                <ApiForm action="/api/v1/community/comment" submitLabel="Commenter" successMessage={null} transform={(d) => ({ ...d, postId: p.id })}><Input name="body" placeholder="Votre commentaire" aria-label="Commentaire" /></ApiForm>
+                <ApiForm action="/api/v1/community/comment" submitLabel="Commenter" successMessage={null} extra={{ postId: p.id }}><Input name="body" placeholder="Votre commentaire" aria-label="Commentaire" /></ApiForm>
               </CardBody></Card>
             );
           })}

@@ -46,7 +46,7 @@ export default async function VerificationDetail({ params }: { params: Promise<{
                   <p className="font-semibold">{STEP_LABELS[step]} {c && <Badge tone={c.result === "PASS" ? "olive" : c.result === "FAIL" ? "red" : "neutral"}>{c.result}</Badge>}</p>
                   {c?.note && <p className="text-xs text-slate">{c.note}</p>}
                   {r.status === "IN_REVIEW" && (
-                    <ApiForm action="/api/v1/admin/verification-check" submitLabel="Enregistrer" successMessage="Contrôle enregistré." className="mt-2 grid grid-cols-[110px_1fr] gap-2" transform={(d) => ({ ...d, requestId: r.id, step })}>
+                    <ApiForm action="/api/v1/admin/verification-check" submitLabel="Enregistrer" successMessage="Contrôle enregistré." className="mt-2 grid grid-cols-[110px_1fr] gap-2" extra={{ requestId: r.id, step }}>
                       <Select name="result" defaultValue={c?.result ?? "PASS"} aria-label="Résultat"><option value="PASS">Conforme</option><option value="FAIL">Non conforme</option><option value="NOT_APPLICABLE">N/A</option></Select>
                       <Input name="note" placeholder="Observation" defaultValue={c?.note ?? ""} aria-label="Observation" />
                     </ApiForm>

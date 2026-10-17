@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalDate } from "@/application/schemas";
 import { actions, defineAction } from "@/infrastructure/http/actions";
 import { addActivity, completeActivity, convertLead, createContact, createLead, createOpportunity, createQuote, moveOpportunity } from "@/application/crm.service";
 import { activitySchema, crmContactSchema, leadSchema, opportunitySchema } from "@/application/schemas";
@@ -13,5 +14,5 @@ export const POST = actions<{ action: string }>({
   contact: defineAction({ schema: crmContactSchema, run: async ({ user }, b) => createContact(user, b) }),
   activity: defineAction({ schema: activitySchema, run: async ({ user }, b) => addActivity(user, b) }),
   "activity-done": defineAction({ schema: z.object({ id: z.string() }), run: async ({ user }, b) => completeActivity(user, b.id) }),
-  quote: defineAction({ schema: z.object({ opportunityId: z.string(), title: z.string().trim().min(2).max(160), amount: z.coerce.number().min(0), currency: z.string().length(3), validUntil: z.coerce.date().optional().nullable() }), run: async ({ user }, b) => createQuote(user, b.opportunityId, { ...b, validUntil: b.validUntil ?? null }) }),
+  quote: defineAction({ schema: z.object({ opportunityId: z.string(), title: z.string().trim().min(2).max(160), amount: z.coerce.number().min(0), currency: z.string().length(3), validUntil: optionalDate }), run: async ({ user }, b) => createQuote(user, b.opportunityId, { ...b, validUntil: b.validUntil ?? null }) }),
 });

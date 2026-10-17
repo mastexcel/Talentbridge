@@ -113,7 +113,7 @@ export function Shell({
 
       {/* Tiroir mobile */}
       {mobile && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu de navigation">
           <button className="absolute inset-0 bg-ink/40" aria-label="Fermer le menu" onClick={() => setMobile(false)} />
           <aside className={cn("absolute inset-y-0 left-0 flex w-72 flex-col shadow-lift animate-fade-in", sidebarBase)}>
             <div className="flex h-16 items-center justify-between px-4">

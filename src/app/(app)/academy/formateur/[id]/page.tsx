@@ -23,7 +23,7 @@ export default async function ManageCourse({ params }: { params: Promise<{ id: s
       <div className="grid gap-6 lg:grid-cols-2">
         <Card><CardHeader title="Modules et leçons" /><CardBody className="space-y-3 text-sm">
           {c.modules.map((m) => <div key={m.id}><p className="font-semibold">{m.title}</p><ul className="ml-4 list-disc text-slate">{m.lessons.map((l) => <li key={l.id}>{l.title} ({l.kind})</li>)}</ul></div>)}
-          <ApiForm action="/api/v1/academy/lesson-add" submitLabel="Ajouter la leçon" successMessage="Leçon ajoutée." className="space-y-2 border-t border-line pt-3" transform={(d) => ({ ...d, courseId: c.id })}>
+          <ApiForm action="/api/v1/academy/lesson-add" submitLabel="Ajouter la leçon" successMessage="Leçon ajoutée." className="space-y-2 border-t border-line pt-3" extra={{ courseId: c.id }}>
             <Field label="Module" htmlFor="l-mod" required><Input id="l-mod" name="moduleTitle" list="modules" /><datalist id="modules">{c.modules.map((m) => <option key={m.id} value={m.title} />)}</datalist></Field>
             <Field label="Titre de la leçon" htmlFor="l-title" required><Input id="l-title" name="title" /></Field>
             <Field label="Type" htmlFor="l-kind"><Select id="l-kind" name="kind"><option value="TEXT">Texte</option><option value="VIDEO">Vidéo</option><option value="DOCUMENT">Document</option><option value="EXERCISE">Exercice</option></Select></Field>
@@ -33,9 +33,9 @@ export default async function ManageCourse({ params }: { params: Promise<{ id: s
         </CardBody></Card>
         <div className="space-y-6">
           <Card><CardHeader title="Évaluation finale" description={finalA ? `${(finalA.questions as unknown[]).length} question(s)` : "Aucune évaluation"} /><CardBody>
-            <ApiForm action="/api/v1/academy/assessment" submitLabel="Enregistrer l'évaluation" successMessage="Évaluation enregistrée." className="space-y-2" transform={(d) => ({ courseId: c.id, title: d.title, questions: JSON.parse(String(d.questions)) })}>
+            <ApiForm action="/api/v1/academy/assessment" submitLabel="Enregistrer l'évaluation" successMessage="Évaluation enregistrée." className="space-y-2" extra={{ courseId: c.id }}>
               <Field label="Titre" htmlFor="a-title"><Input id="a-title" name="title" defaultValue={finalA?.title ?? "Évaluation finale"} /></Field>
-              <Field label="Questions (JSON)" htmlFor="a-q" hint='[{"id":"q1","prompt":"…","options":["A","B"],"answer":0}]'><Textarea id="a-q" name="questions" rows={8} defaultValue={JSON.stringify(finalA?.questions ?? [], null, 1)} className="font-mono text-xs" /></Field>
+              <Field label="Questions (JSON)" htmlFor="a-q" hint='[{"id":"q1","prompt":"…","options":["A","B"],"answer":0}]'><Textarea id="a-q" name="questions" data-type="json" rows={8} defaultValue={JSON.stringify(finalA?.questions ?? [], null, 1)} className="font-mono text-xs" /></Field>
             </ApiForm>
           </CardBody></Card>
           <Card><CardHeader title={`Apprenants (${c.enrollments.length})`} /><CardBody className="space-y-2 text-sm">{c.enrollments.map((e) => <div key={e.id}><div className="flex justify-between"><span>{e.user.firstName} {e.user.lastName}</span><span className="text-xs text-slate">{e.certificate ? `Certifié (${e.certificate.code})` : `${e.progressPct} %`}</span></div><Progress value={e.progressPct} className="mt-1" /></div>)}</CardBody></Card>

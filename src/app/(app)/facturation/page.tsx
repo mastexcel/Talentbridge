@@ -51,7 +51,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                 {d.pending.map((s) => <Alert key={s.id} tone="warning">{s.plan.name} : en attente de paiement. {s.invoices[0] && <Link href={`/facturation/factures/${s.invoices[0].id}`} className="underline">Régler la facture</Link>} <ActionButton action="/api/v1/billing/cancel" body={{ subscriptionId: s.id }} variant="ghost" successMessage="Souscription annulée.">Annuler</ActionButton></Alert>)}
               </CardBody></Card>
               <Card><CardHeader title="Souscrire une offre ou un service" /><CardBody>
-                <ApiForm action="/api/v1/billing/subscribe" submitLabel="Continuer vers le paiement" successMessage={null} className="space-y-3" transform={(x) => ({ ...x, forOrganization: d.audience === "ORGANIZATION" })}>
+                <ApiForm action="/api/v1/billing/subscribe" submitLabel="Continuer vers le paiement" successMessage={null} className="space-y-3" extra={{ forOrganization: d.audience === "ORGANIZATION" }}>
                   <Field label="Offre" htmlFor={`price-${d.key}`} required>
                     <Select id={`price-${d.key}`} name="priceId" defaultValue={offers.find((p) => p.code === sp.offre)?.prices[0]?.id}>
                       {offers.flatMap((p) => p.prices.filter((pr) => pr.amountMinor > 0).map((pr) => <option key={pr.id} value={pr.id}>{p.name} — {formatMoney(pr.amountMinor, pr.currency)} / {INTERVAL[pr.interval]}</option>))}

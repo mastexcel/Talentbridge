@@ -10,8 +10,10 @@ import { homePathFor } from "@/lib/home";
 
 /** Actions d'authentification (limitées en débit par adresse IP). */
 export const POST = route<{ action: string }>({}, async ({ req, user, params, ip }) => {
+  // Seuils anti-force-brute par IP (15 min). AUTH_RATE_LIMIT_FACTOR > 1 uniquement pour les tests automatisés.
+  const factor = Math.max(1, Number(process.env.AUTH_RATE_LIMIT_FACTOR) || 1);
   const limited = (limit: number) => {
-    if (!rateLimiter.hit(`auth:${params.action}:${ip}`, limit, 15 * 60_000).allowed) throw new DomainError("RATE_LIMITED", "Trop de tentatives. Réessayez dans quelques minutes.");
+    if (!rateLimiter.hit(`auth:${params.action}:${ip}`, limit * factor, 15 * 60_000).allowed) throw new DomainError("RATE_LIMITED", "Trop de tentatives. Réessayez dans quelques minutes.");
   };
   const meta = { ip, userAgent: req.headers.get("user-agent") };
   switch (params.action) {

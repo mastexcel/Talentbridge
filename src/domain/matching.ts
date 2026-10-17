@@ -268,9 +268,9 @@ export interface TeamProposal {
  * Résultat déterministe ; à valider par un humain.
  */
 export function proposeTeam(roles: TeamRole[], candidates: CandidateProfile[], budgetMaxMinor?: number | null, weights?: Partial<MatchingWeights>): TeamProposal {
-  const ranked = roles.map((role) => ({ role, results: rankCandidates(role.need, candidates, weights).filter((r) => r.eligible) }));
-  // Rôles avec le moins de candidats éligibles traités en premier.
-  ranked.sort((a, b) => a.results.length - b.results.length || a.role.key.localeCompare(b.role.key));
+  const ranked = roles.map((role, index) => ({ role, index, results: rankCandidates(role.need, candidates, weights).filter((r) => r.eligible) }));
+  // Rôles avec le moins de candidats éligibles traités en premier ; à égalité, ordre de saisie.
+  ranked.sort((a, b) => a.results.length - b.results.length || a.index - b.index);
 
   const used = new Set<string>();
   const byId = new Map(candidates.map((c) => [c.expertId, c]));
@@ -322,6 +322,7 @@ export function normalizeText(s: string): string {
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9+#.\s-]/g, " ")
+    .replace(/\.(?=\s|$)/g, " ") // ponctuation finale (« … une EIES. ») ; conserve « next.js »
     .replace(/\s+/g, " ")
     .trim();
 }

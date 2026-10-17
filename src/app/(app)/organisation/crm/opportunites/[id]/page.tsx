@@ -22,7 +22,7 @@ export default async function OpportunityPage({ params }: { params: Promise<{ id
       <PageHeader back={{ href: "/organisation/crm", label: "CRM" }} title={o.title} description={<>{formatMoney(o.valueMinor, o.currency)} · probabilité {o.probabilityPct} % · <Badge tone="bordeaux">{OPPORTUNITY_STAGE_LABELS[o.stage]}</Badge>{o.lostReason ? ` · perdue : ${o.lostReason}` : ""}</>} />
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <Card><CardHeader title="Historique des interactions" /><CardBody className="space-y-4">
-          <ApiForm action="/api/v1/crm/activity" submitLabel="Ajouter" successMessage="Interaction enregistrée." className="grid gap-2 sm:grid-cols-3" transform={(d) => ({ ...d, opportunityId: o.id, contactId: o.contactId })}>
+          <ApiForm action="/api/v1/crm/activity" submitLabel="Ajouter" successMessage="Interaction enregistrée." className="grid gap-2 sm:grid-cols-3" extra={{ opportunityId: o.id, contactId: o.contactId }}>
             <Select name="kind" aria-label="Type"><option value="CALL">Appel</option><option value="EMAIL">Email</option><option value="MEETING">Rendez-vous</option><option value="NOTE">Note</option><option value="FOLLOW_UP">Relance</option><option value="TASK">Tâche</option></Select>
             <Input name="subject" placeholder="Objet" aria-label="Objet" />
             <Input name="dueAt" type="date" aria-label="Échéance (relance)" />
@@ -34,7 +34,7 @@ export default async function OpportunityPage({ params }: { params: Promise<{ id
           <Card><CardHeader title="Étape" /><CardBody><StageSelect id={o.id} stage={o.stage} />{o.contact && <p className="mt-3 text-sm">Contact : {o.contact.firstName} {o.contact.lastName} — {o.contact.email}</p>}</CardBody></Card>
           <Card><CardHeader title="Devis" /><CardBody className="space-y-2 text-sm">
             {o.quotes.map((q) => <p key={q.id}><span className="font-mono">{q.number}</span> — {q.title} — {formatMoney(q.amountMinor, q.currency)}</p>)}
-            <ApiForm action="/api/v1/crm/quote" submitLabel="Créer le devis" successMessage="Devis créé." className="space-y-2" transform={(d) => ({ ...d, opportunityId: o.id, currency: o.currency })}>
+            <ApiForm action="/api/v1/crm/quote" submitLabel="Créer le devis" successMessage="Devis créé." className="space-y-2" extra={{ opportunityId: o.id, currency: o.currency }}>
               <Field label="Intitulé" htmlFor="q-t"><Input id="q-t" name="title" /></Field>
               <Field label={`Montant (${o.currency})`} htmlFor="q-a"><Input id="q-a" name="amount" type="number" data-type="number" /></Field>
               <Field label="Valable jusqu'au" htmlFor="q-v"><Input id="q-v" name="validUntil" type="date" /></Field>

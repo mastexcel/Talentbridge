@@ -38,8 +38,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <StatCard label="Commissions" value={f.commissions.map((c) => `${c.status} ${fmt(c.amount)}`).join(" · ") || "—"} tone="ink" />
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card><CardHeader title="Recettes mensuelles" /><CardBody><BarChartCard data={f.byMonth.map((m) => ({ mois: m.month, recettes: m.amount }))} xKey="mois" series={[{ key: "recettes", label: "Recettes" }]} format={fmt} /></CardBody></Card>
-        <Card><CardHeader title="Recettes par service" /><CardBody><DonutCard data={f.byService.map((s) => ({ label: s.label, value: s.amount }))} format={fmt} /></CardBody></Card>
+        <Card><CardHeader title="Recettes mensuelles" /><CardBody><BarChartCard data={f.byMonth.map((m) => ({ mois: m.month, recettes: m.amount }))} xKey="mois" series={[{ key: "recettes", label: "Recettes" }]} currency={currency} /></CardBody></Card>
+        <Card><CardHeader title="Recettes par service" /><CardBody><DonutCard data={f.byService.map((s) => ({ label: s.label, value: s.amount }))} currency={currency} /></CardBody></Card>
       </div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card><CardHeader title="Identité vendeur (mentions des factures)" description="Champs fiscaux à valider par l'expert-comptable (réglementation ivoirienne notamment)." /><CardBody>
