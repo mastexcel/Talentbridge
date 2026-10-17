@@ -186,3 +186,33 @@ export async function proposeTeamForMission(user: SessionUser, input: { missionI
   await audit({ actorId: user.id, organizationId: mission.organizationId, action: "matching.team", entityType: "Mission", entityId: mission.id, metadata: { roles: roles.length } }, db);
   return { proposal, profiles, currency: mission.currency };
 }
+
+/** Missions recommandées pour un expert : même moteur, appliqué aux missions ouvertes visibles. */
+export async function recommendedMissions(expertId: string, limit = 10, db: Db = prisma) {
+  const row = await db.expertProfile.findUniqueOrThrow({ where: { id: expertId }, select: { ...candidateSelect, userId: true } });
+  const candidate = toCandidate(row);
+  const skillIds = candidate.skills.map((s) => s.skillId);
+  const missions = await db.mission.findMany({
+    where: {
+      status: { in: ["PUBLISHED", "SHORTLISTING"] },
+      visibility: { in: ["PUBLIC", "MEMBERS"] },
+      OR: [{ applicationDeadline: null }, { applicationDeadline: { gte: new Date() } }],
+      requirements: { some: { skillId: { in: skillIds } } },
+      applications: { none: { expertId } },
+      organization: { members: { none: { userId: row.userId } } },
+    },
+    include: { requirements: { include: { skill: true } }, organization: { select: { name: true, status: true } }, domain: { select: { nameFr: true } } },
+    take: 200,
+  });
+  const weights = await getMatchingWeights(db);
+  return missions
+    .map((m) => {
+      const need: MissionNeed = {
+        requirements: m.requirements.map((r) => ({ skillId: r.skillId, skillName: r.skill.nameFr, mandatory: r.mandatory, minLevel: r.minLevel })),
+        experienceYearsMin: m.experienceYearsMin, domainId: m.domainId, languages: m.languages, countryCode: m.countryCode, workMode: m.workMode, startDate: m.startDate, durationDays: m.durationDays, budgetMaxMinor: m.budgetMaxMinor, currency: m.currency,
+      };
+      return { mission: m, match: rankCandidates(need, [candidate], weights)[0] };
+    })
+    .sort((a, b) => Number(b.match.eligible) - Number(a.match.eligible) || b.match.score - a.match.score)
+    .slice(0, limit);
+}

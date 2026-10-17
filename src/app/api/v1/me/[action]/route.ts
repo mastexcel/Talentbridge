@@ -19,10 +19,10 @@ export const POST = actions<P>({
   profile: defineAction({ schema: expertProfileSchema, run: async ({ user }, body) => updateProfile(user, requireExpert(user).expertId, body) }),
   skills: defineAction({ schema: expertSkillsSchema, run: async ({ user }, body) => setSkills(requireExpert(user).expertId, body.skills) }),
   "item-add": defineAction({
-    schema: z.object({ kind: z.enum(["experience", "qualification", "reference", "portfolio", "slot"]) }).passthrough(),
+    schema: z.object({ itemKind: z.enum(["experience", "qualification", "reference", "portfolio", "slot"]) }).passthrough(),
     run: async ({ user }, body) => {
-      const { kind, ...rest } = body as { kind: Kind } & Record<string, unknown>;
-      return addItem(requireExpert(user).expertId, kind, ITEM_SCHEMAS[kind].parse(rest) as Record<string, unknown>);
+      const { itemKind, ...rest } = body as { itemKind: Kind } & Record<string, unknown>;
+      return addItem(requireExpert(user).expertId, itemKind, ITEM_SCHEMAS[itemKind].parse(rest) as Record<string, unknown>);
     },
   }),
   "item-remove": defineAction({ schema: z.object({ kind: z.enum(["experience", "qualification", "reference", "portfolio", "slot"]), id: z.string().min(1) }), run: async ({ user }, b) => removeItem(requireExpert(user).expertId, b.kind, b.id) }),
