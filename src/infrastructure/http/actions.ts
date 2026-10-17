@@ -8,7 +8,7 @@ import type { ZodType, ZodTypeDef } from "zod";
 import { DomainError } from "@/domain/errors";
 import type { SessionUser } from "@/application/auth.service";
 import { rateLimiter } from "../rate-limit";
-import { parseBody, route, type HandlerOptions } from "./handler";
+import { parseBody, route, withIdempotency, type HandlerOptions } from "./handler";
 
 export interface ActionCtx<P> {
   req: NextRequest;
@@ -20,6 +20,8 @@ export interface ActionCtx<P> {
 export interface ActionDef<P, B> {
   schema?: ZodType<B, ZodTypeDef, unknown>;
   rateLimit?: { limit: number; windowMs: number };
+  /** Rejoue la réponse d'une requête déjà traitée portant la même clé Idempotency-Key. */
+  idempotent?: boolean;
   run: (ctx: ActionCtx<P>, body: B) => Promise<unknown>;
 }
 
@@ -39,6 +41,7 @@ export function actions<P extends { action: string }>(defs: Record<string, Actio
       if (!r.allowed) throw new DomainError("RATE_LIMITED", "Trop de requêtes. Patientez un instant.");
     }
     const body = def.schema ? await parseBody(req, def.schema) : await req.json().catch(() => ({}));
-    return (await def.run({ req, user, params, ip }, body)) ?? { ok: true };
+    const run = async () => (await def.run({ req, user, params, ip }, body)) ?? { ok: true };
+    return def.idempotent ? withIdempotency(req, user.id, `${req.nextUrl.pathname}`, run) : run();
   });
 }

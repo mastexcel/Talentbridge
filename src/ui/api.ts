@@ -5,10 +5,13 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T = unknown>(url: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function api<T = unknown>(url: string, init: { method?: string; body?: unknown; idempotencyKey?: string } = {}): Promise<T> {
   const res = await fetch(url, {
     method: init.method ?? (init.body !== undefined ? "POST" : "GET"),
-    headers: init.body instanceof FormData ? undefined : { "content-type": "application/json" },
+    headers: {
+      ...(init.body instanceof FormData ? {} : { "content-type": "application/json" }),
+      ...(init.idempotencyKey ? { "idempotency-key": init.idempotencyKey } : {}),
+    },
     body: init.body instanceof FormData ? init.body : init.body !== undefined ? JSON.stringify(init.body) : undefined,
   });
   const data = await res.json().catch(() => ({}));

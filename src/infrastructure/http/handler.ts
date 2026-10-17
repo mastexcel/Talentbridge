@@ -75,6 +75,23 @@ export function errorResponse(e: unknown): NextResponse {
 
 type RouteCtx = { params: Promise<Record<string, string>> };
 
+/**
+ * Idempotence : si la requête porte un en-tête Idempotency-Key déjà vu pour cet utilisateur
+ * et ce périmètre, la réponse enregistrée est rejouée (en-tête idempotent-replay) sans ré-exécution.
+ * Seules les réussites sont mémorisées : un échec peut être retenté avec la même clé.
+ */
+export async function withIdempotency(req: NextRequest, userId: string, scope: string, run: () => Promise<unknown>): Promise<unknown> {
+  const key = req.headers.get("idempotency-key")?.slice(0, 100) ?? null;
+  if (!key) return run();
+  const prior = await prisma.idempotencyKey.findUnique({ where: { userId_scope_key: { userId, scope, key } } });
+  if (prior) return NextResponse.json(prior.responseBody, { status: prior.responseStatus, headers: { "idempotent-replay": "true" } });
+  const result = await run();
+  if (result instanceof NextResponse) return result;
+  const body = result ?? { ok: true };
+  await prisma.idempotencyKey.create({ data: { userId, scope, key, responseStatus: 200, responseBody: body as Prisma.InputJsonValue } }).catch(() => undefined);
+  return body;
+}
+
 export function route<P = Record<string, string>>(opts: HandlerOptions, fn: (ctx: HandlerContext<P>) => Promise<unknown>) {
   return async (req: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> => {
     const started = Date.now();
@@ -90,20 +107,10 @@ export function route<P = Record<string, string>>(opts: HandlerOptions, fn: (ctx
         if (!r.allowed) throw new DomainError("RATE_LIMITED", "Trop de requêtes. Patientez un instant.");
       }
       const params = ((await routeCtx?.params) ?? {}) as P;
-      const idemKey = req.headers.get("idempotency-key")?.slice(0, 100) ?? null;
-      if (opts.idempotent && idemKey && user) {
-        const prior = await prisma.idempotencyKey.findUnique({ where: { userId_scope_key: { userId: user.id, scope: opts.idempotent, key: idemKey } } });
-        if (prior) return NextResponse.json(prior.responseBody, { status: prior.responseStatus, headers: { "idempotent-replay": "true" } });
-      }
-      const result = await fn({ req, user, params, ip });
+      const run = () => fn({ req, user, params, ip });
+      const result = opts.idempotent && user ? await withIdempotency(req, user.id, opts.idempotent, run) : await run();
       if (result instanceof NextResponse) return result;
-      const body = result ?? { ok: true };
-      if (opts.idempotent && idemKey && user) {
-        await prisma.idempotencyKey
-          .create({ data: { userId: user.id, scope: opts.idempotent, key: idemKey, responseStatus: 200, responseBody: body as Prisma.InputJsonValue } })
-          .catch(() => undefined);
-      }
-      return NextResponse.json(body);
+      return NextResponse.json(result ?? { ok: true });
     } catch (e) {
       return errorResponse(e);
     } finally {

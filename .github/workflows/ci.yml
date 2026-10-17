@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: talent
+          POSTGRES_PASSWORD: talent
+          POSTGRES_DB: talentbridge
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U talent" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://talent:talent@localhost:5432/talentbridge
+      TEST_DATABASE_URL: postgresql://talent:talent@localhost:5432/talentbridge_test
+      APP_URL: http://localhost:3100
+      SESSION_SECRET: ci-session-secret-not-for-production-000
+      PAYMENT_WEBHOOK_SECRET: ci-webhook-secret-0000
+      CRON_SECRET: ci-cron-secret-000000
+      FILE_SIGNING_SECRET: ci-file-secret-000000
+      DEMO_SEED: "true"
+      DEMO_PASSWORD: Ci-Demo-2026!
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Bases de données
+        run: |
+          PGPASSWORD=talent psql -h localhost -U talent -d talentbridge -c "CREATE DATABASE talentbridge_test"
+          npx prisma migrate deploy
+          DATABASE_URL=$TEST_DATABASE_URL npx prisma migrate deploy
+          npx prisma db seed
+      - run: npm test
+      - run: npm run build
+      - name: Tests E2E (Playwright)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: test-results, retention-days: 7 }
+      - run: npm audit --omit=dev --audit-level=high

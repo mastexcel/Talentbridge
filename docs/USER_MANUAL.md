@@ -1,0 +1,30 @@
+# Manuel utilisateur
+
+## Consultant / expert
+
+1. **Inscription** — « Inscription » › Consultant. Confirmez votre email (lien reçu).
+2. **Profil** (`/espace/profil`) — Accroche, biographie, domaines, compétences avec niveau, langues, tarif indicatif, mobilité, diplômes, expériences, références, portfolio, CV. La jauge de complétude indique ce qui manque ; à **60 %** votre profil peut apparaître dans l'annuaire. Votre profil est **privé par défaut** : passez-le en « Public » ou « Organisations inscrites » pour être trouvé. Vos coordonnées ne sont jamais affichées.
+3. **Disponibilités** (`/espace/disponibilites`) — Statut et périodes.
+4. **Vérification** (`/espace/verification`) — Déposez pièce d'identité, diplômes, références, puis « Soumettre ». Un vérificateur Talent Bridge contrôle chaque pièce ; les badges n'apparaissent qu'après validation.
+5. **Missions** (`/espace/missions`) — Missions recommandées (avec score expliqué) et recherche ; « Candidater » avec proposition technique, tarif et disponibilité. Suivi dans **Candidatures**, invitations reçues, entretiens.
+6. **Contrats et projets** — Contrats, puis espace projet : tâches, livrables à déposer, commentaires. Avis échangés en fin de contrat.
+7. **Formations** — Academy : suivre un cours, passer l'évaluation, obtenir un **certificat vérifiable par QR code** (`/certificats/<code>`).
+8. **Alertes** — Recevoir les nouvelles missions / appels d'offres correspondant à vos critères.
+9. **Communauté** — Publications, groupes, mentorat ; signaler un contenu inapproprié.
+
+## Organisation (cabinet, entreprise, ONG, institution, bailleur, formation)
+
+1. **Inscription** — « Inscription » › Organisation. L'organisation est **validée par Talent Bridge** avant de pouvoir publier.
+2. **Équipe** (`/organisation/equipe`) — Inviter des collaborateurs et attribuer un rôle : Propriétaire, Administrateur, Recruteur, Chef de projet, Collaborateur, Lecteur (droits détaillés dans ARCHITECTURE.md). Un utilisateur membre de plusieurs organisations change d'organisation active depuis le menu.
+3. **Missions** (`/organisation/missions`) — « Nouvelle mission » : description, exigences (compétence, niveau, obligatoire ou non), budget, lieu, dates. Enregistrée en brouillon, puis « Publier » (dans la limite de votre offre).
+4. **Matching** — Sur la mission : « Lancer le matching ». Chaque expert recommandé a un score sur 100 détaillé par critère (compétences, expérience, domaine, disponibilité, localisation/langues, vérification) et les raisons. « Proposer une équipe » compose une équipe couvrant toutes les exigences. Inviter, présélectionner (shortlists), comparer.
+5. **Candidatures** — Présélectionner, planifier un entretien, retenir ou refuser (motif), puis **créer le contrat**.
+6. **Projets** (`/projets`) — Tableau Kanban, chronologie, livrables à valider, messagerie.
+7. **Appels d'offres** (`/organisation/appels-offres`) — Veille, alertes, dossier de réponse : extraction assistée des exigences (brouillon à relire), matrice de conformité, experts clés, consortium.
+8. **CRM** (`/organisation/crm`) — Prospects, contacts, opportunités par étape, activités, devis.
+9. **Rapports** (`/organisation/rapports`) — Indicateurs de votre organisation (missions, candidatures, contrats, dépenses). Export CSV/Excel des opportunités depuis la page CRM ; factures téléchargeables une à une en PDF depuis Facturation.
+10. **Facturation** (`/facturation`) — Choisir une offre, payer (Mobile Money, carte, virement), télécharger les factures PDF. Un paiement n'est « Payé » qu'après confirmation du prestataire ou réception du virement.
+
+## Paramètres (tous)
+
+`/parametres` : mot de passe, préférences de notification (in-app, email, SMS par type), consentements, **export de mes données**, suppression du compte. Langue : sélecteur FR / EN dans l'en-tête du site public (traduction anglaise partielle).

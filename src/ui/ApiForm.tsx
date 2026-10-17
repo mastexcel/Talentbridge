@@ -6,7 +6,7 @@
  *  - état de chargement, message de succès, redirection ou rafraîchissement.
  */
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api, ApiError } from "./api";
 import { useToast } from "./Toast";
@@ -78,6 +78,8 @@ export function ApiForm({
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Clé d'idempotence stable jusqu'au succès : un double envoi (double clic, réseau instable) n'est traité qu'une fois.
+  const idemKey = useRef<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -88,7 +90,9 @@ export function ApiForm({
     setBusy(true);
     try {
       const raw = { ...serializeForm(form), ...(extra ?? {}) };
-      const data = await api<Record<string, unknown>>(action, { method, body: transform ? transform(raw) : raw });
+      idemKey.current ??= Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+      const data = await api<Record<string, unknown>>(action, { method, body: transform ? transform(raw) : raw, idempotencyKey: idemKey.current });
+      idemKey.current = null;
       if (successMessage) toast("success", successMessage);
       onSuccess?.(data);
       if (redirectTo) router.push(typeof redirectTo === "function" ? redirectTo(data) : redirectTo);

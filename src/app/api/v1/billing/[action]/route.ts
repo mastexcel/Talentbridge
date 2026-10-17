@@ -8,11 +8,12 @@ import { prisma } from "@/infrastructure/db";
 const method = z.enum(["MOBILE_MONEY", "CARD", "BANK_TRANSFER"]);
 
 export const POST = actions<{ action: string }>({
-  subscribe: defineAction({ schema: subscribeSchema, rateLimit: { limit: 20, windowMs: 3600_000 }, run: async ({ user }, b) => subscribe(user, b) }),
-  pay: defineAction({ schema: z.object({ invoiceId: z.string().min(1), method, payerPhone: z.string().max(30).optional().nullable() }), run: async ({ user }, b) => startPayment(user, b.invoiceId, b.method, b.payerPhone ?? null) }),
+  subscribe: defineAction({ schema: subscribeSchema, idempotent: true, rateLimit: { limit: 20, windowMs: 3600_000 }, run: async ({ user }, b) => subscribe(user, b) }),
+  pay: defineAction({ idempotent: true, schema: z.object({ invoiceId: z.string().min(1), method, payerPhone: z.string().max(30).optional().nullable() }), run: async ({ user }, b) => startPayment(user, b.invoiceId, b.method, b.payerPhone ?? null) }),
   cancel: defineAction({ schema: z.object({ subscriptionId: z.string().min(1) }), run: async ({ user }, b) => cancelSubscription(user, b.subscriptionId) }),
-  "change-plan": defineAction({ schema: z.object({ subscriptionId: z.string().min(1), priceId: z.string().min(1), method }), run: async ({ user }, b) => changePlan(user, b.subscriptionId, b.priceId, b.method) }),
+  "change-plan": defineAction({ idempotent: true, schema: z.object({ subscriptionId: z.string().min(1), priceId: z.string().min(1), method }), run: async ({ user }, b) => changePlan(user, b.subscriptionId, b.priceId, b.method) }),
   refund: defineAction({
+    idempotent: true,
     schema: refundRequestSchema.extend({ paymentId: z.string().min(1) }),
     run: async ({ user }, b) => {
       const p = await prisma.payment.findUniqueOrThrow({ where: { id: b.paymentId }, select: { currency: true } });
