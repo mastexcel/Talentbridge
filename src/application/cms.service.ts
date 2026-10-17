@@ -21,8 +21,8 @@ export async function saveBlock(user: SessionUser, key: string, locale: string, 
 }
 
 /** Valeurs calculées (LIVE) des chiffres clés : jamais de données de démonstration en production. */
-async function liveMetric(metric: string, db: Db): Promise<number> {
-  const real = { isDemo: false };
+async function liveMetric(metric: string, includeDemo: boolean, db: Db): Promise<number> {
+  const real = includeDemo ? {} : { isDemo: false };
   switch (metric) {
     case "experts_verified":
       return db.expertProfile.count({ where: { ...real, badges: { some: { revokedAt: null } } } });
@@ -43,14 +43,18 @@ async function liveMetric(metric: string, db: Db): Promise<number> {
   }
 }
 
-export async function publicStats(db: Db = prisma) {
+/**
+ * Chiffres clés publics. En environnement de démonstration (`includeDemo`), les données fictives
+ * sont comptées et CHAQUE chiffre porte le marqueur « Démo ».
+ */
+export async function publicStats(includeDemo = false, db: Db = prisma) {
   const stats = await db.publicStat.findMany({ where: { isVisible: true }, orderBy: { sortOrder: "asc" } });
   return Promise.all(
     stats.map(async (s) => ({
       key: s.key,
       label: s.label,
-      value: s.source === "LIVE" && s.metric ? new Intl.NumberFormat("fr-FR").format(await liveMetric(s.metric, db)).replace(/ /g, " ") : (s.manualValue ?? "—"),
-      isDemo: s.source === "MANUAL" && s.isDemo,
+      value: s.source === "LIVE" && s.metric ? new Intl.NumberFormat("fr-FR").format(await liveMetric(s.metric, includeDemo, db)).replace(/ /g, " ") : (s.manualValue ?? "—"),
+      isDemo: (s.source === "MANUAL" && s.isDemo) || (s.source === "LIVE" && includeDemo),
       source: s.source,
     })),
   );
