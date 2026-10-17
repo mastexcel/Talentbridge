@@ -4,6 +4,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getUserBySessionToken, SESSION_COOKIE, type SessionUser } from "@/application/auth.service";
+import { homePathFor } from "./home";
 import { hasAdminPermission, orgRoleCan, type AdminPermission, type OrgPermission, type OrgRole } from "@/domain/permissions";
 
 /** Mémorisé pour la durée d'une requête : layout et page partagent une seule lecture. */
@@ -40,9 +41,4 @@ export async function requireAdminUser(permission: AdminPermission, next = "/adm
   return user;
 }
 
-export function homePathFor(user: Pick<SessionUser, "platformRole" | "expertProfile" | "memberships">): string {
-  if (user.platformRole === "ADMIN") return "/admin";
-  if (user.memberships.length > 0 && !user.expertProfile) return "/organisation";
-  if (user.expertProfile) return "/espace";
-  return "/";
-}
+export { homePathFor } from "./home";

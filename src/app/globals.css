@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/*
+ * Design system Talent Bridge — issu du logo officiel
+ *  - bordeaux (#7B1F2B) : « Talent » — identité, titres, surfaces institutionnelles
+ *  - orange (#E8731A)   : le pont — appels à l'action, mise en avant
+ *  - olive (#8DB92E)    : « Bridge » — succès, vérification, progression
+ *  - ink (#17212B)      : texte principal ; slate (#64748B) : texte secondaire ; mist (#F7F8FA) : fonds
+ * Contrastes (WCAG AA) : texte blanc sur bordeaux 9,9:1, sur orange-700 4,9:1, sur olive-700 5,2:1.
+ * L'orange vif #E8731A et l'olive #8DB92E ne portent pas de texte blanc de petite taille.
+ */
+@theme {
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-inter), system-ui, sans-serif;
+
+  --color-bordeaux-950: #2e0a10;
+  --color-bordeaux-900: #4a1019;
+  --color-bordeaux-800: #5f1621;
+  --color-bordeaux-700: #7b1f2b;
+  --color-bordeaux-600: #93303d;
+  --color-bordeaux-500: #ab4856;
+  --color-bordeaux-200: #ecc7cc;
+  --color-bordeaux-100: #f7e4e6;
+  --color-bordeaux-50: #fcf3f4;
+
+  --color-orange-800: #8a3d06;
+  --color-orange-700: #b4520c;
+  --color-orange-600: #d4640f;
+  --color-orange-500: #e8731a;
+  --color-orange-400: #f29445;
+  --color-orange-200: #fbd6b5;
+  --color-orange-100: #fdecdc;
+  --color-orange-50: #fff7ef;
+
+  --color-olive-800: #3f5512;
+  --color-olive-700: #557318;
+  --color-olive-600: #6e9420;
+  --color-olive-500: #8db92e;
+  --color-olive-200: #d9eab0;
+  --color-olive-100: #eef6dc;
+  --color-olive-50: #f7fbee;
+
+  --color-ink: #17212b;
+  --color-slate: #64748b;
+  --color-mist: #f7f8fa;
+  --color-line: #e5e8ee;
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.25rem;
+  --shadow-card: 0 1px 2px rgb(23 33 43 / 0.04), 0 4px 16px rgb(23 33 43 / 0.06);
+  --shadow-lift: 0 10px 30px rgb(23 33 43 / 0.12);
+
+  --animate-fade-in: fade-in 0.35s ease-out both;
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--color-mist); color: var(--color-ink); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+/* Focus clavier visible partout (accessibilité) */
+:focus-visible { outline: 3px solid var(--color-orange-500); outline-offset: 2px; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Texte riche des contenus CMS */
+.prose-tb p { margin: 0 0 0.85em; line-height: 1.7; }
+.prose-tb ul { list-style: disc; padding-left: 1.25rem; margin: 0 0 1em; }
+.prose-tb li { margin: 0.25em 0; }
+.prose-tb strong { color: var(--color-bordeaux-700); }
+.prose-tb h2 { font-size: 1.25rem; font-weight: 700; margin: 1.4em 0 0.5em; color: var(--color-bordeaux-700); }
+
+.bg-hero { background: radial-gradient(120% 120% at 0% 0%, #7b1f2b 0%, #4a1019 55%, #2e0a10 100%); }
+.bg-bridge-line { background: linear-gradient(90deg, var(--color-orange-500), var(--color-olive-500)); }
