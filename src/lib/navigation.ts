@@ -62,7 +62,7 @@ export function appNavigation(user: SessionUser): NavSection[] {
 
 export function adminNavigation(user: SessionUser): NavSection[] {
   const can = (p: AdminPermission) => hasAdminPermission(user, p);
-  const pick = (items: (NavSection["items"][number] & { perm: AdminPermission })[]) => items.filter((i) => can(i.perm)).map(({ perm: _perm, ...rest }) => rest);
+  const pick = (items: (NavSection["items"][number] & { perm: AdminPermission })[]) => items.filter((i) => can(i.perm)).map((i) => ({ href: i.href, label: i.label, icon: i.icon }));
   return [
     { title: "Pilotage", items: [{ href: "/admin", label: "Vue d'ensemble", icon: "LayoutDashboard" }, ...pick([{ href: "/admin/direction", label: "CEO Dashboard", icon: "LineChart", perm: "ANALYTICS_VIEW" }, { href: "/admin/audit", label: "Journal d'audit", icon: "ScrollText", perm: "AUDIT_VIEW" }])] },
     {

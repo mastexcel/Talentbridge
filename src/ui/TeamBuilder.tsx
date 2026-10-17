@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Loader2, Plus, Trash2, Users } from "lucide-react";
 import { api, ApiError } from "./api";
 import { Button } from "./Button";
-import { Input, Select } from "./Field";
+import { Input } from "./Field";
 import { Alert } from "./Feedback";
 import { useToast } from "./Toast";
 

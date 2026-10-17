@@ -12,6 +12,11 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    // Interface en français : l'apostrophe typographique est omniprésente dans le texte JSX,
+    // que React échappe déjà correctement. La règle n'apporte ici que du bruit.
+    rules: { "react/no-unescaped-entities": "off" },
+  },
+  {
     ignores: [
       "node_modules/**",
       ".next/**",
