@@ -1,0 +1,2339 @@
+// Talent Bridge — modèle de données (PostgreSQL)
+//
+// Conventions :
+//  - Identifiants : cuid. Numéros lisibles (missions, factures, contrats) séparés et uniques.
+//  - Montants : entiers en unité mineure de la devise (`*Minor`) + code devise ISO 4217.
+//    XOF/XAF n'ont pas de sous-unité (1 = 1 FCFA) ; EUR/USD en centimes (cf. table currencies).
+//  - Taux en points de base (bps) : 1 % = 100 bps.
+//  - Isolation multi-organisation : toute donnée appartenant à une organisation porte
+//    `organizationId` (ou `ownerOrgId` pour le CRM) et n'est lue qu'au travers des services
+//    qui vérifient l'appartenance (src/application/access.ts).
+//  - Suppressions : `onDelete: Restrict` par défaut sur les données métier et financières ;
+//    `Cascade` uniquement pour les enfants sans valeur propre (lignes, jointures, progression).
+//  - Données de démonstration : `isDemo = true` (affichées comme telles, jamais en production).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Référentiels (pays, devises, domaines, compétences, paramètres)
+// ═════════════════════════════════════════════════════════════
+
+model Country {
+  code         String    @id @db.Char(2) // ISO 3166-1 alpha-2
+  nameFr       String
+  nameEn       String
+  region       String // Afrique de l'Ouest, Centrale…
+  currencyCode String    @db.Char(3)
+  phonePrefix  String?
+  isActive     Boolean   @default(true)
+  currency     Currency  @relation(fields: [currencyCode], references: [code])
+  taxRates     TaxRate[]
+
+  @@map("countries")
+}
+
+model Currency {
+  code       String    @id @db.Char(3) // ISO 4217
+  name       String
+  symbol     String
+  minorUnits Int       @default(0) // 0 pour XOF, 2 pour EUR
+  isActive   Boolean   @default(true)
+  countries  Country[]
+
+  @@map("currencies")
+}
+
+model TaxRate {
+  id          String  @id @default(cuid())
+  countryCode String  @db.Char(2)
+  name        String // ex. « TVA 18 % »
+  rateBps     Int
+  isDefault   Boolean @default(false)
+  isActive    Boolean @default(true)
+  country     Country @relation(fields: [countryCode], references: [code])
+
+  @@index([countryCode])
+  @@map("tax_rates")
+}
+
+model ExpertiseDomain {
+  id        String         @id @default(cuid())
+  slug      String         @unique
+  nameFr    String
+  nameEn    String
+  sortOrder Int            @default(0)
+  isActive  Boolean        @default(true)
+  skills    Skill[]
+  experts   ExpertDomain[]
+  missions  Mission[]
+  tenders   Tender[]
+
+  @@map("expertise_domains")
+}
+
+model Skill {
+  id       String               @id @default(cuid())
+  slug     String               @unique
+  nameFr   String
+  nameEn   String
+  domainId String?
+  synonyms String[] // aide à l'extraction des compétences d'un besoin
+  isActive Boolean              @default(true)
+  domain   ExpertiseDomain?     @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  experts  ExpertSkill[]
+  missions MissionRequirement[]
+
+  @@index([domainId])
+  @@map("skills")
+}
+
+/// Paramètres administrables (poids du matching, objectif de délai, coordonnées vendeur…).
+model SystemSetting {
+  key         String   @id
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@map("system_settings")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Utilisateurs, sessions, consentements
+// ═════════════════════════════════════════════════════════════
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+/// Rôle sur la plateforme (distinct des rôles dans les organisations).
+enum PlatformRole {
+  USER
+  ADMIN
+}
+
+enum AdminPermission {
+  SUPER_ADMIN
+  USERS_MANAGE
+  EXPERTS_VERIFY
+  ORGS_VALIDATE
+  MARKETPLACE_MODERATE
+  FINANCE_MANAGE
+  CONFIG_MANAGE
+  CONTENT_MANAGE
+  COMMUNITY_MODERATE
+  CRM_MANAGE
+  ANALYTICS_VIEW
+  AUDIT_VIEW
+}
+
+model User {
+  id                  String            @id @default(cuid())
+  email               String            @unique
+  passwordHash        String
+  firstName           String
+  lastName            String
+  phone               String?
+  locale              String            @default("fr")
+  status              UserStatus        @default(ACTIVE)
+  platformRole        PlatformRole      @default(USER)
+  adminPermissions    AdminPermission[]
+  emailVerifiedAt     DateTime?
+  failedLogins        Int               @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  deletionRequestedAt DateTime?
+  isDemo              Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  sessions          Session[]
+  tokens            UserToken[]
+  consents          Consent[]
+  memberships       OrganizationMember[]
+  expertProfile     ExpertProfile?
+  invitationsSent   Invitation[]              @relation("InvitationSender")
+  notifications     Notification[]
+  notificationPrefs NotificationPreference[]
+  favorites         Favorite[]
+  savedMissions     SavedMission[]
+  participants      ConversationParticipant[]
+  messages          Message[]
+  posts             CommunityPost[]
+  comments          PostComment[]
+  reactions         PostReaction[]
+  following         Follow[]                  @relation("Follower")
+  followers         Follow[]                  @relation("Followee")
+  groupMemberships  GroupMembership[]
+  reports           ContentReport[]           @relation("Reporter")
+  enrollments       Enrollment[]
+  attempts          AssessmentAttempt[]
+  coursesTaught     Course[]                  @relation("Instructor")
+  mentoring         Mentorship[]              @relation("Mentor")
+  mentored          Mentorship[]              @relation("Mentee")
+  projectMembers    ProjectMember[]
+  tasksAssigned     ProjectTask[]
+  taskComments      TaskComment[]
+  files             StoredFile[]
+  subscriptions     Subscription[]
+  invoices          Invoice[]
+  tenderAlerts      TenderAlert[]
+  auditLogs         AuditLog[]
+
+  @@index([status])
+  @@map("users")
+}
+
+model Session {
+  id          String        @id @default(cuid())
+  tokenHash   String        @unique // SHA-256 du jeton opaque, jamais le jeton en clair
+  userId      String
+  activeOrgId String? // organisation courante (changement de contexte)
+  ip          String?
+  userAgent   String?
+  expiresAt   DateTime
+  createdAt   DateTime      @default(now())
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrg   Organization? @relation(fields: [activeOrgId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+enum TokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model UserToken {
+  id        String    @id @default(cuid())
+  userId    String
+  type      TokenType
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("user_tokens")
+}
+
+enum ConsentType {
+  TERMS
+  PRIVACY
+  MARKETING_EMAIL
+  MARKETING_SMS
+  PROFILE_PUBLIC
+}
+
+/// Historique des consentements (une ligne par décision, jamais écrasée).
+model Consent {
+  id        String      @id @default(cuid())
+  userId    String
+  type      ConsentType
+  granted   Boolean
+  version   String
+  ip        String?
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, createdAt])
+  @@map("consents")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Organisations (tenants) et membres
+// ═════════════════════════════════════════════════════════════
+
+enum OrganizationType {
+  CONSULTING_FIRM
+  COMPANY
+  NGO
+  INSTITUTION
+  TRAINING_PROVIDER
+  DONOR
+  PROJECT_OWNER
+}
+
+enum OrganizationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  RECRUITER
+  PROJECT_MANAGER
+  MEMBER
+  VIEWER
+}
+
+model Organization {
+  id                 String             @id @default(cuid())
+  name               String
+  slug               String             @unique
+  type               OrganizationType
+  status             OrganizationStatus @default(PENDING)
+  countryCode        String             @db.Char(2)
+  city               String?
+  registrationNumber String? // RCCM, NINEA… selon le pays
+  taxId              String? // compte contribuable (NCC en Côte d'Ivoire)
+  sector             String?
+  size               String? // 1-10, 11-50…
+  website            String?
+  description        String?
+  address            String?
+  contactName        String?
+  contactEmail       String?
+  contactPhone       String?
+  expertiseNeeds     String?
+  verifiedAt         DateTime?
+  verificationNote   String?
+  isDemo             Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  members         OrganizationMember[]
+  invitations     Invitation[]
+  documents       OrganizationDocument[]
+  sessions        Session[]
+  missions        Mission[]
+  shortlists      Shortlist[]
+  contracts       Contract[]
+  projects        Project[]
+  tenders         Tender[]               @relation("TenderPublisher")
+  bids            TenderBid[]
+  consortiumRoles ConsortiumMember[]
+  courses         Course[]
+  leads           Lead[]
+  crmContacts     CrmContact[]
+  opportunities   Opportunity[]
+  crmActivities   CrmActivity[]
+  quotes          Quote[]
+  subscriptions   Subscription[]
+  invoices        Invoice[]
+  conversations   Conversation[]
+  files           StoredFile[]
+  reviews         Review[]
+  auditLogs       AuditLog[]
+
+  @@index([type, status])
+  @@index([countryCode])
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole
+  title          String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("organization_members")
+}
+
+model Invitation {
+  id             String       @id @default(cuid())
+  organizationId String
+  email          String
+  role           OrgRole
+  tokenHash      String       @unique
+  invitedById    String
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy      User         @relation("InvitationSender", fields: [invitedById], references: [id])
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitations")
+}
+
+model OrganizationDocument {
+  id             String       @id @default(cuid())
+  organizationId String
+  fileId         String       @unique
+  kind           String // RCCM, statuts, attestation fiscale…
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  file           StoredFile   @relation(fields: [fileId], references: [id], onDelete: Restrict)
+
+  @@map("organization_documents")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Fichiers (stockage objet compatible S3, accès par URL signée temporaire)
+// ═════════════════════════════════════════════════════════════
+
+enum FileVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+model StoredFile {
+  id             String         @id @default(cuid())
+  ownerUserId    String
+  organizationId String?
+  storageKey     String         @unique
+  filename       String
+  mimeType       String
+  sizeBytes      Int
+  sha256         String
+  visibility     FileVisibility @default(PRIVATE)
+  purpose        String // CV, PHOTO, VERIFICATION, MISSION, TENDER, PROPOSAL, DELIVERABLE, COURSE…
+  createdAt      DateTime       @default(now())
+  owner          User           @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  orgDocument          OrganizationDocument?
+  verificationDocument VerificationDocument?
+
+  @@index([ownerUserId])
+  @@index([organizationId])
+  @@map("stored_files")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Profils experts
+// ═════════════════════════════════════════════════════════════
+
+enum Availability {
+  AVAILABLE
+  PARTIAL
+  UNAVAILABLE
+}
+
+enum Mobility {
+  LOCAL
+  NATIONAL
+  REGIONAL
+  INTERNATIONAL
+}
+
+enum ProfileVisibility {
+  PUBLIC // visible dans l'annuaire public (coordonnées masquées)
+  MEMBERS // visible des organisations connectées uniquement
+  PRIVATE
+}
+
+model ExpertProfile {
+  id                 String            @id @default(cuid())
+  userId             String            @unique
+  slug               String            @unique
+  headline           String?
+  bio                String?
+  countryCode        String?           @db.Char(2)
+  city               String?
+  yearsExperience    Int               @default(0)
+  languages          String[] // codes ISO 639-1 : fr, en, pt, ar…
+  availability       Availability      @default(AVAILABLE)
+  availableFrom      DateTime?
+  mobility           Mobility          @default(NATIONAL)
+  remoteOk           Boolean           @default(true)
+  mobilityCountries  String[]
+  dailyRateMinor     Int?
+  rateCurrency       String?           @db.Char(3)
+  missionPreferences String?
+  visibility         ProfileVisibility @default(PUBLIC)
+  photoFileId        String?
+  cvFileId           String?
+  completeness       Int               @default(0) // 0-100, recalculé côté serveur
+  averageRating      Float?
+  ratingsCount       Int               @default(0)
+  completedMissions  Int               @default(0)
+  isDemo             Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  user              User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domains           ExpertDomain[]
+  skills            ExpertSkill[]
+  qualifications    Qualification[]
+  experiences       ProfessionalExperience[]
+  references        ExpertReference[]
+  portfolio         PortfolioItem[]
+  availabilitySlots AvailabilitySlot[]
+  verifications     VerificationRequest[]
+  badges            ExpertBadge[]
+  applications      Application[]
+  invitations       MissionInvitation[]
+  matchScores       MatchScore[]
+  shortlistEntries  ShortlistEntry[]
+  favorites         Favorite[]
+  contracts         Contract[]
+  reviews           Review[]
+  bidExperts        TenderBidExpert[]
+
+  @@index([countryCode])
+  @@index([availability])
+  @@index([visibility, completeness])
+  @@map("expert_profiles")
+}
+
+model ExpertDomain {
+  expertId String
+  domainId String
+  expert   ExpertProfile   @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  domain   ExpertiseDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@id([expertId, domainId])
+  @@index([domainId])
+  @@map("expert_domains")
+}
+
+model ExpertSkill {
+  expertId String
+  skillId  String
+  level    Int           @default(3) // 1 (notions) → 5 (expert)
+  years    Int           @default(0)
+  expert   ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  skill    Skill         @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([expertId, skillId])
+  @@index([skillId])
+  @@map("expert_skills")
+}
+
+enum ItemVerification {
+  DECLARED // déclaré par l'expert, non vérifié
+  VERIFIED
+  REJECTED
+}
+
+model Qualification {
+  id          String           @id @default(cuid())
+  expertId    String
+  kind        String           @default("DEGREE") // DEGREE | CERTIFICATION
+  title       String
+  institution String
+  year        Int?
+  fileId      String?
+  status      ItemVerification @default(DECLARED)
+  expiresAt   DateTime?
+  expert      ExpertProfile    @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@index([expertId])
+  @@map("qualifications")
+}
+
+model ProfessionalExperience {
+  id          String        @id @default(cuid())
+  expertId    String
+  title       String
+  employer    String
+  countryCode String?       @db.Char(2)
+  sector      String?
+  startDate   DateTime
+  endDate     DateTime?
+  description String?
+  expert      ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@index([expertId])
+  @@map("professional_experiences")
+}
+
+/// Référence professionnelle. Les coordonnées du référent ne sont jamais exposées publiquement.
+model ExpertReference {
+  id           String           @id @default(cuid())
+  expertId     String
+  contactName  String
+  contactOrg   String
+  contactEmail String?
+  contactPhone String?
+  relation     String?
+  missionTitle String?
+  year         Int?
+  status       ItemVerification @default(DECLARED)
+  verifiedAt   DateTime?
+  verifiedById String?
+  expert       ExpertProfile    @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@index([expertId])
+  @@map("expert_references")
+}
+
+model PortfolioItem {
+  id          String        @id @default(cuid())
+  expertId    String
+  title       String
+  description String?
+  url         String?
+  fileId      String?
+  year        Int?
+  expert      ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@index([expertId])
+  @@map("portfolio_items")
+}
+
+enum SlotKind {
+  AVAILABLE
+  BOOKED
+  UNAVAILABLE
+}
+
+model AvailabilitySlot {
+  id        String        @id @default(cuid())
+  expertId  String
+  startDate DateTime
+  endDate   DateTime
+  kind      SlotKind      @default(UNAVAILABLE)
+  note      String?
+  expert    ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@index([expertId, startDate])
+  @@map("availability_slots")
+}
+
+model Favorite {
+  userId    String
+  expertId  String
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expert    ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@id([userId, expertId])
+  @@map("favorites")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Vérification et certification
+// ═════════════════════════════════════════════════════════════
+
+enum VerificationType {
+  IDENTITY // pièce d'identité
+  DOCUMENTS // diplômes, certifications, références
+  SKILLS // évaluation des compétences
+}
+
+enum VerificationStatus {
+  NOT_SUBMITTED
+  PENDING
+  IN_REVIEW
+  INFO_REQUESTED
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum VerificationStep {
+  SUBMISSION
+  COMPLETENESS
+  ADMINISTRATIVE
+  DIPLOMAS
+  REFERENCES
+  SKILLS_ASSESSMENT
+  DECISION
+  BADGE
+  RENEWAL
+}
+
+enum CheckResult {
+  PASS
+  FAIL
+  NOT_APPLICABLE
+}
+
+model VerificationRequest {
+  id           String                 @id @default(cuid())
+  expertId     String
+  type         VerificationType
+  status       VerificationStatus     @default(NOT_SUBMITTED)
+  currentStep  VerificationStep       @default(SUBMISSION)
+  submittedAt  DateTime?
+  decidedAt    DateTime?
+  decidedById  String?
+  decisionNote String?
+  expiresAt    DateTime?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  expert       ExpertProfile          @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  documents    VerificationDocument[]
+  checks       VerificationCheck[]
+  events       VerificationEvent[]
+  badges       ExpertBadge[]
+
+  @@index([status, type])
+  @@index([expertId])
+  @@map("verification_requests")
+}
+
+model VerificationDocument {
+  id        String              @id @default(cuid())
+  requestId String
+  fileId    String              @unique
+  kind      String // ID_CARD, PASSPORT, DIPLOMA, CERTIFICATE, REFERENCE_LETTER, OTHER
+  label     String?
+  createdAt DateTime            @default(now())
+  request   VerificationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  file      StoredFile          @relation(fields: [fileId], references: [id], onDelete: Restrict)
+
+  @@map("verification_documents")
+}
+
+/// Résultat d'un contrôle humain à une étape donnée.
+model VerificationCheck {
+  id          String              @id @default(cuid())
+  requestId   String
+  step        VerificationStep
+  result      CheckResult
+  note        String?
+  checkedById String
+  createdAt   DateTime            @default(now())
+  request     VerificationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, step])
+  @@map("verification_checks")
+}
+
+/// Historique immuable des transitions (traçabilité des décisions).
+model VerificationEvent {
+  id         String              @id @default(cuid())
+  requestId  String
+  actorId    String?
+  fromStatus VerificationStatus
+  toStatus   VerificationStatus
+  step       VerificationStep
+  note       String?
+  createdAt  DateTime            @default(now())
+  request    VerificationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+  @@map("verification_events")
+}
+
+enum BadgeKind {
+  IDENTITY_VERIFIED
+  DOCUMENTS_VERIFIED
+  SKILLS_ASSESSED
+  ACADEMY_CERTIFIED
+  TOP_RATED
+}
+
+model Badge {
+  id           String        @id @default(cuid())
+  code         String        @unique
+  kind         BadgeKind
+  nameFr       String
+  nameEn       String
+  description  String
+  validityDays Int? // durée avant renouvellement
+  isActive     Boolean       @default(true)
+  awards       ExpertBadge[]
+
+  @@map("badges")
+}
+
+/// Badge attribué : toujours relié à une décision (vérification ou certificat), jamais automatique.
+model ExpertBadge {
+  id                    String               @id @default(cuid())
+  expertId              String
+  badgeId               String
+  verificationRequestId String?
+  awardedById           String
+  awardedAt             DateTime             @default(now())
+  expiresAt             DateTime?
+  revokedAt             DateTime?
+  expert                ExpertProfile        @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  badge                 Badge                @relation(fields: [badgeId], references: [id], onDelete: Restrict)
+  verificationRequest   VerificationRequest? @relation(fields: [verificationRequestId], references: [id], onDelete: SetNull)
+
+  @@index([expertId])
+  @@map("expert_badges")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Marketplace des missions
+// ═════════════════════════════════════════════════════════════
+
+enum MissionStatus {
+  DRAFT
+  PUBLISHED // réception des candidatures
+  SHORTLISTING
+  INTERVIEWS
+  SELECTION
+  CONTRACTING
+  IN_PROGRESS
+  CLOSED
+  CANCELLED
+}
+
+enum WorkMode {
+  ONSITE
+  REMOTE
+  HYBRID
+}
+
+enum MissionVisibility {
+  PUBLIC
+  MEMBERS
+  INVITE_ONLY
+}
+
+model Mission {
+  id                  String            @id @default(cuid())
+  reference           String            @unique // TB-M-2026-00042
+  organizationId      String
+  createdById         String
+  domainId            String?
+  title               String
+  description         String
+  objectives          String?
+  expectedResults     String?
+  experienceYearsMin  Int               @default(0)
+  languages           String[]
+  countryCode         String            @db.Char(2)
+  city                String?
+  workMode            WorkMode          @default(HYBRID)
+  durationDays        Int?
+  startDate           DateTime?
+  budgetMinMinor      Int?
+  budgetMaxMinor      Int?
+  currency            String            @db.Char(3)
+  applicationDeadline DateTime?
+  visibility          MissionVisibility @default(PUBLIC)
+  status              MissionStatus     @default(DRAFT)
+  publishedAt         DateTime?
+  closedAt            DateTime?
+  isDemo              Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  domain       ExpertiseDomain?     @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  requirements MissionRequirement[]
+  attachments  MissionAttachment[]
+  applications Application[]
+  invitations  MissionInvitation[]
+  matchScores  MatchScore[]
+  saved        SavedMission[]
+  shortlists   Shortlist[]
+  contracts    Contract[]
+  projects     Project[]
+  events       MissionEvent[]
+
+  @@index([organizationId, status])
+  @@index([status, publishedAt])
+  @@index([countryCode])
+  @@map("missions")
+}
+
+model MissionRequirement {
+  id        String  @id @default(cuid())
+  missionId String
+  skillId   String
+  mandatory Boolean @default(false)
+  minLevel  Int     @default(1)
+  mission   Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  skill     Skill   @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([missionId, skillId])
+  @@map("mission_requirements")
+}
+
+model MissionAttachment {
+  id        String  @id @default(cuid())
+  missionId String
+  fileId    String
+  label     String?
+  mission   Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@map("mission_attachments")
+}
+
+model MissionEvent {
+  id         String        @id @default(cuid())
+  missionId  String
+  actorId    String?
+  fromStatus MissionStatus
+  toStatus   MissionStatus
+  note       String?
+  createdAt  DateTime      @default(now())
+  mission    Mission       @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@index([missionId])
+  @@map("mission_events")
+}
+
+model SavedMission {
+  userId    String
+  missionId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission   Mission  @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, missionId])
+  @@map("saved_missions")
+}
+
+enum InvitationStatus {
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model MissionInvitation {
+  id          String           @id @default(cuid())
+  missionId   String
+  expertId    String
+  invitedById String
+  message     String?
+  status      InvitationStatus @default(SENT)
+  createdAt   DateTime         @default(now())
+  respondedAt DateTime?
+  mission     Mission          @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  expert      ExpertProfile    @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@unique([missionId, expertId])
+  @@map("mission_invitations")
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  SHORTLISTED
+  INTERVIEW
+  SELECTED
+  REJECTED
+  WITHDRAWN
+  CONTRACTED
+}
+
+model Application {
+  id                String             @id @default(cuid())
+  missionId         String
+  expertId          String
+  status            ApplicationStatus  @default(SUBMITTED)
+  coverLetter       String
+  proposedRateMinor Int?
+  currency          String?            @db.Char(3)
+  availableFrom     DateTime?
+  technicalFileId   String?
+  financialFileId   String?
+  recruiterNote     String? // visible uniquement par l'organisation
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  mission           Mission            @relation(fields: [missionId], references: [id], onDelete: Restrict)
+  expert            ExpertProfile      @relation(fields: [expertId], references: [id], onDelete: Restrict)
+  interviews        Interview[]
+  events            ApplicationEvent[]
+  contract          Contract?
+
+  @@unique([missionId, expertId])
+  @@index([expertId, status])
+  @@map("applications")
+}
+
+model ApplicationEvent {
+  id            String            @id @default(cuid())
+  applicationId String
+  actorId       String?
+  fromStatus    ApplicationStatus
+  toStatus      ApplicationStatus
+  note          String?
+  createdAt     DateTime          @default(now())
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("application_events")
+}
+
+model Interview {
+  id            String      @id @default(cuid())
+  applicationId String
+  scheduledAt   DateTime
+  durationMin   Int         @default(45)
+  mode          String      @default("VISIO") // VISIO | PHONE | ONSITE
+  location      String?
+  notes         String?
+  outcome       String? // POSITIVE | NEUTRAL | NEGATIVE
+  createdById   String
+  createdAt     DateTime    @default(now())
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("interviews")
+}
+
+model Shortlist {
+  id             String           @id @default(cuid())
+  organizationId String
+  missionId      String?
+  name           String
+  createdById    String
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mission        Mission?         @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  entries        ShortlistEntry[]
+
+  @@index([organizationId])
+  @@map("shortlists")
+}
+
+model ShortlistEntry {
+  shortlistId String
+  expertId    String
+  note        String?
+  addedAt     DateTime      @default(now())
+  shortlist   Shortlist     @relation(fields: [shortlistId], references: [id], onDelete: Cascade)
+  expert      ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@id([shortlistId, expertId])
+  @@map("shortlist_entries")
+}
+
+enum MatchDecision {
+  SUGGESTED
+  ACCEPTED
+  DISMISSED
+}
+
+/// Score de matching explicable, conservé pour validation humaine et audit de l'algorithme.
+model MatchScore {
+  id               String        @id @default(cuid())
+  missionId        String
+  expertId         String
+  score            Float // 0-100
+  breakdown        Json // détail par critère
+  missingSkills    String[]
+  algorithmVersion String
+  decision         MatchDecision @default(SUGGESTED)
+  decidedById      String?
+  decidedAt        DateTime?
+  computedAt       DateTime      @default(now())
+  mission          Mission       @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  expert           ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@unique([missionId, expertId])
+  @@index([missionId, score])
+  @@map("match_scores")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Contrats, projets, équipes, livrables, évaluations
+// ═════════════════════════════════════════════════════════════
+
+enum ContractStatus {
+  DRAFT
+  SENT
+  SIGNED
+  ACTIVE
+  COMPLETED
+  TERMINATED
+}
+
+model Contract {
+  id             String         @id @default(cuid())
+  reference      String         @unique
+  organizationId String
+  missionId      String
+  expertId       String
+  applicationId  String?        @unique
+  status         ContractStatus @default(DRAFT)
+  amountMinor    Int
+  currency       String         @db.Char(3)
+  commissionBps  Int            @default(0)
+  startDate      DateTime?
+  endDate        DateTime?
+  terms          String?
+  signedAt       DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  mission        Mission        @relation(fields: [missionId], references: [id], onDelete: Restrict)
+  expert         ExpertProfile  @relation(fields: [expertId], references: [id], onDelete: Restrict)
+  application    Application?   @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  commissions    Commission[]
+  reviews        Review[]
+
+  @@index([organizationId, status])
+  @@index([expertId])
+  @@map("contracts")
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+model Project {
+  id             String          @id @default(cuid())
+  organizationId String
+  missionId      String?
+  name           String
+  description    String?
+  status         ProjectStatus   @default(PLANNING)
+  startDate      DateTime?
+  endDate        DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  mission        Mission?        @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  members        ProjectMember[]
+  tasks          ProjectTask[]
+
+  @@index([organizationId])
+  @@map("projects")
+}
+
+enum ProjectRole {
+  LEAD // chef de mission
+  CONSULTANT
+  CLIENT_REVIEWER
+  OBSERVER
+}
+
+/// Membres d'un projet : seuls eux (et les gestionnaires de l'organisation) y accèdent.
+model ProjectMember {
+  projectId        String
+  userId           String
+  role             ProjectRole @default(CONSULTANT)
+  responsibilities String?
+  addedAt          DateTime    @default(now())
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+enum DeliverableStatus {
+  NOT_DELIVERABLE
+  PENDING
+  SUBMITTED
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+/// Tâche ou livrable (Kanban et chronologie).
+model ProjectTask {
+  id                String            @id @default(cuid())
+  projectId         String
+  title             String
+  description       String?
+  status            TaskStatus        @default(TODO)
+  deliverableStatus DeliverableStatus @default(NOT_DELIVERABLE)
+  assigneeId        String?
+  startDate         DateTime?
+  dueDate           DateTime?
+  fileId            String?
+  position          Int               @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  project           Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee          User?             @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments          TaskComment[]
+
+  @@index([projectId, status])
+  @@map("project_tasks")
+}
+
+model TaskComment {
+  id        String      @id @default(cuid())
+  taskId    String
+  authorId  String
+  body      String
+  createdAt DateTime    @default(now())
+  task      ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author    User        @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([taskId])
+  @@map("task_comments")
+}
+
+/// Évaluation vérifiée : n'existe que rattachée à un contrat terminé.
+model Review {
+  id             String        @id @default(cuid())
+  contractId     String
+  organizationId String
+  expertId       String
+  authorId       String
+  rating         Int // 1-5
+  comment        String?
+  isPublic       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  contract       Contract      @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  expert         ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, authorId])
+  @@index([expertId])
+  @@map("reviews")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Messagerie
+// ═════════════════════════════════════════════════════════════
+
+model Conversation {
+  id             String                    @id @default(cuid())
+  subject        String
+  organizationId String?
+  missionId      String?
+  createdAt      DateTime                  @default(now())
+  lastMessageAt  DateTime                  @default(now())
+  organization   Organization?             @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  participants   ConversationParticipant[]
+  messages       Message[]
+
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  conversationId String
+  userId         String
+  lastReadAt     DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Appels d'offres, AMI, consortiums
+// ═════════════════════════════════════════════════════════════
+
+enum TenderType {
+  TENDER // appel d'offres
+  EOI // AMI : appel à manifestation d'intérêt
+  RFP
+}
+
+enum TenderStatus {
+  OPEN
+  CLOSED
+  AWARDED
+  CANCELLED
+}
+
+model Tender {
+  id             String           @id @default(cuid())
+  reference      String           @unique
+  publisherOrgId String?
+  type           TenderType
+  title          String
+  buyerName      String
+  countryCode    String           @db.Char(2)
+  domainId       String?
+  description    String
+  eligibility    String?
+  budgetMinor    Int?
+  currency       String?          @db.Char(3)
+  publishedAt    DateTime         @default(now())
+  deadline       DateTime
+  status         TenderStatus     @default(OPEN)
+  sourceUrl      String?
+  isDemo         Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  publisher      Organization?    @relation("TenderPublisher", fields: [publisherOrgId], references: [id], onDelete: SetNull)
+  domain         ExpertiseDomain? @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  documents      TenderDocument[]
+  bids           TenderBid[]
+
+  @@index([status, deadline])
+  @@index([countryCode])
+  @@map("tenders")
+}
+
+model TenderDocument {
+  id       String @id @default(cuid())
+  tenderId String
+  fileId   String
+  label    String
+  tender   Tender @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  @@map("tender_documents")
+}
+
+model TenderAlert {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  keywords     String[]
+  countryCodes String[]
+  domainIds    String[]
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("tender_alerts")
+}
+
+enum BidStatus {
+  WATCHING
+  PREPARING
+  SUBMITTED
+  WON
+  LOST
+  WITHDRAWN
+}
+
+/// Dossier de candidature d'une organisation à un appel d'offres (privé à l'organisation).
+model TenderBid {
+  id               String            @id @default(cuid())
+  organizationId   String
+  tenderId         String
+  status           BidStatus         @default(WATCHING)
+  internalDeadline DateTime?
+  submittedAt      DateTime?
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tender           Tender            @relation(fields: [tenderId], references: [id], onDelete: Restrict)
+  requirements     BidRequirement[]
+  experts          TenderBidExpert[]
+  consortium       Consortium?
+
+  @@unique([organizationId, tenderId])
+  @@map("tender_bids")
+}
+
+enum RequirementStatus {
+  MISSING
+  IN_PROGRESS
+  READY
+}
+
+/// Ligne de checklist / matrice de conformité. `isDraft` = proposée automatiquement, à vérifier.
+model BidRequirement {
+  id       String            @id @default(cuid())
+  bidId    String
+  category String // ADMINISTRATIVE | TECHNICAL | FINANCIAL | EXPERTS
+  label    String
+  status   RequirementStatus @default(MISSING)
+  isDraft  Boolean           @default(false)
+  fileId   String?
+  note     String?
+  position Int               @default(0)
+  bid      TenderBid         @relation(fields: [bidId], references: [id], onDelete: Cascade)
+
+  @@index([bidId])
+  @@map("bid_requirements")
+}
+
+model TenderBidExpert {
+  bidId    String
+  expertId String
+  role     String
+  bid      TenderBid     @relation(fields: [bidId], references: [id], onDelete: Cascade)
+  expert   ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@id([bidId, expertId])
+  @@map("tender_bid_experts")
+}
+
+model Consortium {
+  id        String             @id @default(cuid())
+  bidId     String             @unique
+  name      String
+  createdAt DateTime           @default(now())
+  bid       TenderBid          @relation(fields: [bidId], references: [id], onDelete: Cascade)
+  members   ConsortiumMember[]
+
+  @@map("consortiums")
+}
+
+model ConsortiumMember {
+  consortiumId   String
+  organizationId String
+  role           String // LEAD | MEMBER | SUBCONTRACTOR
+  consortium     Consortium   @relation(fields: [consortiumId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@id([consortiumId, organizationId])
+  @@map("consortium_members")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Academy (formation, évaluations, certificats vérifiables)
+// ═════════════════════════════════════════════════════════════
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Course {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  title         String
+  summary       String
+  description   String?
+  level         String         @default("INTERMEDIATE")
+  durationHours Int            @default(1)
+  priceMinor    Int            @default(0)
+  currency      String         @default("XOF") @db.Char(3)
+  status        CourseStatus   @default(DRAFT)
+  passingScore  Int            @default(70) // % minimum à l'évaluation finale
+  instructorId  String
+  providerOrgId String?
+  isDemo        Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  instructor    User           @relation("Instructor", fields: [instructorId], references: [id], onDelete: Restrict)
+  providerOrg   Organization?  @relation(fields: [providerOrgId], references: [id], onDelete: SetNull)
+  modules       CourseModule[]
+  enrollments   Enrollment[]
+  assessments   Assessment[]
+  liveSessions  LiveSession[]
+
+  @@index([status])
+  @@map("courses")
+}
+
+model CourseModule {
+  id       String   @id @default(cuid())
+  courseId String
+  title    String
+  position Int      @default(0)
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+
+  @@index([courseId])
+  @@map("course_modules")
+}
+
+enum LessonKind {
+  TEXT
+  VIDEO
+  DOCUMENT
+  EXERCISE
+}
+
+model Lesson {
+  id       String           @id @default(cuid())
+  moduleId String
+  title    String
+  kind     LessonKind       @default(TEXT)
+  content  String?
+  videoUrl String?
+  fileId   String?
+  position Int              @default(0)
+  module   CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+
+  @@index([moduleId])
+  @@map("lessons")
+}
+
+enum EnrollmentStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Enrollment {
+  id          String               @id @default(cuid())
+  courseId    String
+  userId      String
+  status      EnrollmentStatus     @default(ACTIVE)
+  progressPct Int                  @default(0)
+  completedAt DateTime?
+  createdAt   DateTime             @default(now())
+  course      Course               @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessons     LessonProgress[]
+  certificate LearningCertificate?
+
+  @@unique([courseId, userId])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  enrollmentId String
+  lessonId     String
+  completedAt  DateTime   @default(now())
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson       Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@id([enrollmentId, lessonId])
+  @@map("lesson_progress")
+}
+
+/// Questions : [{ id, prompt, options: string[], answer: index }]. Les réponses ne sont jamais envoyées au client.
+model Assessment {
+  id        String              @id @default(cuid())
+  courseId  String
+  title     String
+  questions Json
+  isFinal   Boolean             @default(true)
+  course    Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  attempts  AssessmentAttempt[]
+
+  @@map("assessments")
+}
+
+model AssessmentAttempt {
+  id           String     @id @default(cuid())
+  assessmentId String
+  userId       String
+  answers      Json
+  scorePct     Int
+  passed       Boolean
+  createdAt    DateTime   @default(now())
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId, userId])
+  @@map("assessment_attempts")
+}
+
+/// Certificat vérifiable publiquement par son code (page /certificats/[code] + QR code).
+model LearningCertificate {
+  id           String     @id @default(cuid())
+  code         String     @unique
+  enrollmentId String     @unique
+  holderName   String
+  courseTitle  String
+  scorePct     Int
+  issuedAt     DateTime   @default(now())
+  revokedAt    DateTime?
+  revokeReason String?
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+
+  @@map("learning_certificates")
+}
+
+model LiveSession {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  startsAt    DateTime
+  durationMin Int      @default(60)
+  joinUrl     String?
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, startsAt])
+  @@map("live_sessions")
+}
+
+enum MentorshipStatus {
+  REQUESTED
+  ACCEPTED
+  DECLINED
+  COMPLETED
+}
+
+model Mentorship {
+  id          String           @id @default(cuid())
+  mentorId    String
+  menteeId    String
+  topic       String
+  message     String?
+  status      MentorshipStatus @default(REQUESTED)
+  createdAt   DateTime         @default(now())
+  respondedAt DateTime?
+  mentor      User             @relation("Mentor", fields: [mentorId], references: [id], onDelete: Cascade)
+  mentee      User             @relation("Mentee", fields: [menteeId], references: [id], onDelete: Cascade)
+
+  @@index([mentorId, status])
+  @@index([menteeId])
+  @@map("mentorships")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Communauté
+// ═════════════════════════════════════════════════════════════
+
+model CommunityGroup {
+  id          String            @id @default(cuid())
+  slug        String            @unique
+  name        String
+  description String
+  createdAt   DateTime          @default(now())
+  members     GroupMembership[]
+  posts       CommunityPost[]
+
+  @@map("community_groups")
+}
+
+model GroupMembership {
+  groupId  String
+  userId   String
+  joinedAt DateTime       @default(now())
+  group    CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@map("group_memberships")
+}
+
+enum PostStatus {
+  PUBLISHED
+  HIDDEN // masqué par la modération en attente d'examen
+  REMOVED
+}
+
+model CommunityPost {
+  id        String          @id @default(cuid())
+  authorId  String
+  groupId   String?
+  body      String
+  status    PostStatus      @default(PUBLISHED)
+  createdAt DateTime        @default(now())
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  group     CommunityGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  comments  PostComment[]
+  reactions PostReaction[]
+
+  @@index([status, createdAt])
+  @@map("community_posts")
+}
+
+model PostComment {
+  id        String        @id @default(cuid())
+  postId    String
+  authorId  String
+  body      String
+  status    PostStatus    @default(PUBLISHED)
+  createdAt DateTime      @default(now())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("post_comments")
+}
+
+model PostReaction {
+  postId    String
+  userId    String
+  kind      String        @default("LIKE")
+  createdAt DateTime      @default(now())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+  @@map("post_reactions")
+}
+
+model Follow {
+  followerId String
+  followeeId String
+  createdAt  DateTime @default(now())
+  follower   User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followee   User     @relation("Followee", fields: [followeeId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followeeId])
+  @@map("follows")
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model ContentReport {
+  id           String       @id @default(cuid())
+  reporterId   String
+  targetType   String // POST | COMMENT | EXPERT | MISSION | MESSAGE
+  targetId     String
+  reason       String
+  status       ReportStatus @default(OPEN)
+  resolvedById String?
+  resolution   String?
+  createdAt    DateTime     @default(now())
+  resolvedAt   DateTime?
+  reporter     User         @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("content_reports")
+}
+
+model CommunityEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  startsAt    DateTime
+  location    String?
+  joinUrl     String?
+  isDemo      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([startsAt])
+  @@map("community_events")
+}
+
+// ═════════════════════════════════════════════════════════════
+// CRM (isolé par organisation propriétaire)
+// ═════════════════════════════════════════════════════════════
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  DISQUALIFIED
+}
+
+model Lead {
+  id            String        @id @default(cuid())
+  ownerOrgId    String
+  companyName   String
+  contactName   String?
+  email         String?
+  phone         String?
+  countryCode   String?       @db.Char(2)
+  source        String? // site, salon, recommandation…
+  status        LeadStatus    @default(NEW)
+  assigneeId    String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  ownerOrg      Organization  @relation(fields: [ownerOrgId], references: [id], onDelete: Cascade)
+  opportunities Opportunity[]
+
+  @@index([ownerOrgId, status])
+  @@map("leads")
+}
+
+model CrmContact {
+  id            String        @id @default(cuid())
+  ownerOrgId    String
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  companyName   String?
+  position      String?
+  createdAt     DateTime      @default(now())
+  ownerOrg      Organization  @relation(fields: [ownerOrgId], references: [id], onDelete: Cascade)
+  opportunities Opportunity[]
+  activities    CrmActivity[]
+
+  @@index([ownerOrgId])
+  @@map("crm_contacts")
+}
+
+enum OpportunityStage {
+  PROSPECT
+  QUALIFIED
+  NEED_IDENTIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+model Opportunity {
+  id                String           @id @default(cuid())
+  ownerOrgId        String
+  title             String
+  stage             OpportunityStage @default(PROSPECT)
+  valueMinor        Int              @default(0)
+  currency          String           @db.Char(3)
+  probabilityPct    Int              @default(10)
+  expectedCloseDate DateTime?
+  assigneeId        String?
+  leadId            String?
+  contactId         String?
+  lostReason        String?
+  closedAt          DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  ownerOrg          Organization     @relation(fields: [ownerOrgId], references: [id], onDelete: Cascade)
+  lead              Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  contact           CrmContact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  activities        CrmActivity[]
+  quotes            Quote[]
+
+  @@index([ownerOrgId, stage])
+  @@map("opportunities")
+}
+
+model CrmActivity {
+  id            String       @id @default(cuid())
+  ownerOrgId    String
+  opportunityId String?
+  contactId     String?
+  userId        String
+  kind          String // CALL | EMAIL | MEETING | NOTE | TASK | FOLLOW_UP
+  subject       String
+  body          String?
+  dueAt         DateTime?
+  doneAt        DateTime?
+  createdAt     DateTime     @default(now())
+  ownerOrg      Organization @relation(fields: [ownerOrgId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  contact       CrmContact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([ownerOrgId, dueAt])
+  @@map("crm_activities")
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+model Quote {
+  id            String       @id @default(cuid())
+  ownerOrgId    String
+  opportunityId String?
+  number        String
+  title         String
+  amountMinor   Int
+  currency      String       @db.Char(3)
+  status        QuoteStatus  @default(DRAFT)
+  validUntil    DateTime?
+  createdAt     DateTime     @default(now())
+  ownerOrg      Organization @relation(fields: [ownerOrgId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  @@unique([ownerOrgId, number])
+  @@map("quotes")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Offres, abonnements, facturation, paiements
+// ═════════════════════════════════════════════════════════════
+
+enum PlanAudience {
+  EXPERT
+  ORGANIZATION
+}
+
+enum BillingInterval {
+  MONTH
+  YEAR
+  ONE_TIME
+}
+
+/// Offre commerciale (abonnement ou service ponctuel). Aucun tarif n'est codé en dur.
+model SubscriptionPlan {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  name          String
+  audience      PlanAudience
+  description   String
+  isRecurring   Boolean        @default(true)
+  isActive      Boolean        @default(true)
+  isPublic      Boolean        @default(true)
+  sortOrder     Int            @default(0)
+  highlight     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  prices        PlanPrice[]
+  features      PlanFeature[]
+  subscriptions Subscription[]
+
+  @@map("subscription_plans")
+}
+
+model PlanPrice {
+  id            String           @id @default(cuid())
+  planId        String
+  currency      String           @db.Char(3)
+  interval      BillingInterval
+  amountMinor   Int
+  countryCode   String?          @db.Char(2) // tarif spécifique à un pays, sinon générique
+  isActive      Boolean          @default(true)
+  plan          SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@index([planId, currency])
+  @@map("plan_prices")
+}
+
+model Feature {
+  id          String        @id @default(cuid())
+  code        String        @unique // ex. missions.publish, experts.contact, matching.run
+  name        String
+  description String?
+  plans       PlanFeature[]
+
+  @@map("features")
+}
+
+model PlanFeature {
+  planId    String
+  featureId String
+  limit     Int? // null = illimité
+  plan      SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature   Feature          @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([planId, featureId])
+  @@map("plan_features")
+}
+
+model Coupon {
+  id             String         @id @default(cuid())
+  code           String         @unique
+  percentOffBps  Int? // 1000 = 10 %
+  amountOffMinor Int?
+  currency       String?        @db.Char(3)
+  maxRedemptions Int?
+  redemptions    Int            @default(0)
+  validUntil     DateTime?
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  subscriptions  Subscription[]
+
+  @@map("coupons")
+}
+
+enum SubscriptionStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+/// Souscription d'un utilisateur (expert) OU d'une organisation (contrainte CHECK en migration).
+model Subscription {
+  id                 String             @id @default(cuid())
+  planId             String
+  priceId            String
+  userId             String?
+  organizationId     String?
+  status             SubscriptionStatus @default(PENDING_PAYMENT)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean            @default(false)
+  cancelledAt        DateTime?
+  couponId           String?
+  renewalCount       Int                @default(0)
+  isDemo             Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  plan               SubscriptionPlan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+  price              PlanPrice          @relation(fields: [priceId], references: [id], onDelete: Restrict)
+  user               User?              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organization       Organization?      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  coupon             Coupon?            @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  invoices           Invoice[]
+
+  @@index([organizationId, status])
+  @@index([userId, status])
+  @@index([status, currentPeriodEnd])
+  @@map("subscriptions")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
+/// Séquence de numérotation continue par préfixe et par année (exigence comptable).
+model InvoiceSequence {
+  prefix     String
+  year       Int
+  lastNumber Int    @default(0)
+
+  @@id([prefix, year])
+  @@map("invoice_sequences")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  number         String?       @unique // attribué à l'émission (pas en brouillon)
+  organizationId String?
+  userId         String?
+  subscriptionId String?
+  status         InvoiceStatus @default(DRAFT)
+  currency       String        @db.Char(3)
+  subtotalMinor  Int           @default(0)
+  taxMinor       Int           @default(0)
+  totalMinor     Int           @default(0)
+  paidMinor      Int           @default(0)
+  serviceCode    String? // SUBSCRIPTION, CERTIFICATION, TRAINING, SOURCING, TENDER_SUPPORT, TEAM_BUILDING, COMMISSION
+  buyerSnapshot  Json // nom, adresse, identifiant fiscal au moment de l'émission
+  sellerSnapshot Json
+  countryCode    String?       @db.Char(2)
+  notes          String?
+  issuedAt       DateTime?
+  dueAt          DateTime?
+  paidAt         DateTime?
+  voidedAt       DateTime?
+  remindersSent  Int           @default(0)
+  lastReminderAt DateTime?
+  isDemo         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  lines          InvoiceLine[]
+  payments       Payment[]
+
+  @@index([organizationId, status])
+  @@index([userId])
+  @@index([status, dueAt])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id             String  @id @default(cuid())
+  invoiceId      String
+  description    String
+  quantity       Int     @default(1)
+  unitPriceMinor Int
+  taxRateBps     Int     @default(0)
+  totalMinor     Int // HT
+  invoice        Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_lines")
+}
+
+enum PaymentMethod {
+  MOBILE_MONEY
+  CARD
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+/// Paiement : SUCCEEDED uniquement sur webhook signé vérifié côté serveur (ou rapprochement manuel tracé).
+model Payment {
+  id            String         @id @default(cuid())
+  invoiceId     String
+  provider      String
+  providerRef   String?        @unique
+  method        PaymentMethod
+  status        PaymentStatus  @default(PENDING)
+  amountMinor   Int
+  currency      String         @db.Char(3)
+  isTest        Boolean        @default(false)
+  payerPhone    String?
+  failureReason String?
+  confirmedAt   DateTime?
+  createdById   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  invoice       Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  events        PaymentEvent[]
+  refunds       Refund[]
+  commissions   Commission[]
+
+  @@index([invoiceId])
+  @@index([status, createdAt])
+  @@map("payments")
+}
+
+/// Journal des webhooks reçus (idempotence par identifiant d'événement du prestataire).
+model PaymentEvent {
+  id         String   @id @default(cuid())
+  provider   String
+  eventId    String
+  paymentId  String?
+  status     String
+  payload    Json
+  receivedAt DateTime @default(now())
+  payment    Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, eventId])
+  @@map("payment_events")
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  SUCCEEDED
+  REJECTED
+  FAILED
+}
+
+model Refund {
+  id            String       @id @default(cuid())
+  paymentId     String
+  amountMinor   Int
+  reason        String
+  status        RefundStatus @default(REQUESTED)
+  requestedById String
+  decidedById   String?
+  providerRef   String?
+  createdAt     DateTime     @default(now())
+  processedAt   DateTime?
+  payment       Payment      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@map("refunds")
+}
+
+enum CommissionStatus {
+  PENDING
+  INVOICED
+  COLLECTED
+  CANCELLED
+}
+
+model Commission {
+  id          String           @id @default(cuid())
+  contractId  String?
+  paymentId   String?
+  rateBps     Int
+  baseMinor   Int
+  amountMinor Int
+  currency    String           @db.Char(3)
+  status      CommissionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  contract    Contract?        @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  payment     Payment?         @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("commissions")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Notifications et communication
+// ═════════════════════════════════════════════════════════════
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // REGISTRATION, VERIFICATION, NEW_MISSION, INVITATION, APPLICATION, MESSAGE, DEADLINE, PAYMENT, INVOICE, TRAINING, CERTIFICATION, RENEWAL
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+/// Modèles administrables. Variables {{prenom}}, {{lien}}… remplacées à l'envoi.
+model NotificationTemplate {
+  id        String              @id @default(cuid())
+  type      String
+  channel   NotificationChannel
+  locale    String              @default("fr")
+  subject   String
+  body      String
+  isActive  Boolean             @default(true)
+  updatedAt DateTime            @updatedAt
+
+  @@unique([type, channel, locale])
+  @@map("notification_templates")
+}
+
+model NotificationPreference {
+  userId  String
+  type    String
+  channel NotificationChannel
+  enabled Boolean             @default(true)
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, type, channel])
+  @@map("notification_preferences")
+}
+
+enum OutboxStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+/// File d'envoi email / SMS (traitée par `npm run jobs`, réessais bornés).
+model OutboundMessage {
+  id          String              @id @default(cuid())
+  channel     NotificationChannel
+  to          String
+  subject     String?
+  body        String
+  status      OutboxStatus        @default(QUEUED)
+  attempts    Int                 @default(0)
+  lastError   String?
+  providerRef String?
+  sendAfter   DateTime            @default(now())
+  sentAt      DateTime?
+  createdAt   DateTime            @default(now())
+
+  @@index([status, sendAfter])
+  @@map("outbound_messages")
+}
+
+// ═════════════════════════════════════════════════════════════
+// CMS du site public
+// ═════════════════════════════════════════════════════════════
+
+/// Bloc de contenu éditable (titres, textes, pages légales) par clé et par langue.
+model ContentBlock {
+  id          String   @id @default(cuid())
+  key         String // home.hero, about.mission, legal.terms…
+  locale      String   @default("fr")
+  title       String?
+  body        String // Markdown simple
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@unique([key, locale])
+  @@map("content_blocks")
+}
+
+/// Chiffre clé affiché sur le site. `source` indique s'il est calculé (LIVE) ou saisi (MANUAL, démonstratif).
+model PublicStat {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  label       String
+  source      String  @default("LIVE") // LIVE | MANUAL
+  metric      String? // métrique calculée : experts_verified, organizations, missions_completed, countries
+  manualValue String?
+  isDemo      Boolean @default(false)
+  sortOrder   Int     @default(0)
+  isVisible   Boolean @default(true)
+
+  @@map("public_stats")
+}
+
+model Testimonial {
+  id           String   @id @default(cuid())
+  authorName   String
+  authorRole   String
+  organization String?
+  quote        String
+  isVerified   Boolean  @default(false) // vérifié par l'équipe (accord écrit de l'auteur)
+  isDemo       Boolean  @default(false)
+  isVisible    Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@map("testimonials")
+}
+
+model Partner {
+  id        String  @id @default(cuid())
+  name      String
+  url       String?
+  isDemo    Boolean @default(false)
+  isVisible Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  @@map("partners")
+}
+
+model FaqItem {
+  id        String  @id @default(cuid())
+  category  String  @default("GENERAL")
+  locale    String  @default("fr")
+  question  String
+  answer    String
+  sortOrder Int     @default(0)
+  isVisible Boolean @default(true)
+
+  @@map("faq_items")
+}
+
+model ContactRequest {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  subject   String
+  message   String
+  status    String   @default("NEW") // NEW | HANDLED
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@map("contact_requests")
+}
+
+// ═════════════════════════════════════════════════════════════
+// Audit, idempotence
+// ═════════════════════════════════════════════════════════════
+
+/// Journal d'audit en ajout seul (aucune route ne le modifie ni ne le supprime).
+model AuditLog {
+  id             String        @id @default(cuid())
+  actorId        String?
+  organizationId String?
+  action         String // ex. verification.decide, user.suspend, payment.confirm
+  entityType     String
+  entityId       String?
+  metadata       Json?
+  ip             String?
+  createdAt      DateTime      @default(now())
+  actor          User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model IdempotencyKey {
+  id             String   @id @default(cuid())
+  userId         String
+  scope          String
+  key            String
+  responseStatus Int
+  responseBody   Json
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, scope, key])
+  @@map("idempotency_keys")
+}
