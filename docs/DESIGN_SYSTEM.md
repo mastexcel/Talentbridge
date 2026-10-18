@@ -4,10 +4,15 @@ Tokens définis dans `src/app/globals.css` (Tailwind CSS 4, bloc `@theme`) ; com
 
 ## Identité
 
-- **Logos officiels utilisés tels que fournis (fichiers non modifiés)** : `public/brand/logo-talent-bridge.png` (fond blanc) et `logo-talent-bridge-bordeaux.png` (cartouche bordeaux, fonds sombres). Composant : `<Logo variant="light|dark" />`. Le logo vertical fourni (`docs/brand-sources/logo-vertical-fourni.png`) contient un damier « transparent » incrusté dans l'image : il n'est pas affiché tant qu'une version PNG réellement transparente n'est pas fournie. Les favicons restent des recadrages du pictogramme (un favicon doit être carré).
+- **Logo** : fichiers officiels conservés intacts dans `docs/brand-sources/` (`logo-officiel-fond-blanc.png`, `logo-officiel-cartouche-bordeaux.png`). Les déclinaisons web sont générées par `python3 scripts/brand/generate_brand_assets.py` sans toucher au dessin : fond rendu transparent (le cartouche bordeaux perd ses coins noirs), marges retirées, rééchantillonnage Lanczos, PNG sans perte servis sans recompression (`unoptimized`) :
+  - `tb-wordmark.png` / `tb-wordmark-inverse.png` : « Talent Bridge » + pont, fonds clairs / sombres — en-têtes, barres latérales, certificats ;
+  - `tb-logo.png` / `tb-logo-inverse.png` : logo complet avec slogan (partage social, supports imprimés) ;
+  - `tb-pictogramme.png` : pont seul (barre latérale repliée, icônes) ; `src/app/icon.png` et `apple-touch-icon.png` en dérivent.
+  - Composant `<Logo variant="light|dark" tagline />` : le slogan, illisible une fois réduit dans une image, est composé en texte net (`<Tagline>`) et n'est affiché que là où la place le permet (pied de page, page de connexion).
+  - Le logo vertical fourni (`logo-vertical-fourni.png`) contient un damier « transparent » incrusté : non utilisé.
 - **Visuels officiels** : `public/visuels/*.png`, affichés sans modification par `<Visual>` (`src/ui/Visual.tsx`, catalogue `src/ui/visuals.ts`). Seules des zones sont recouvertes par du HTML positionné en coordonnées de l'image : boutons peints → vrais liens ; chiffres peints → chiffres réels (`publicFigures()`) ; barres de recherche → vrais formulaires ; pastilles et cartes → zones cliquables. Sous 768 px, chiffres et actions sont repris lisiblement sous le visuel. Pour ajouter un visuel : copier le fichier dans `public/visuels`, mesurer les zones (x, y, largeur, hauteur en pixels de l'image) et les déclarer dans `visuals.ts`.
-- **Certificats** : composants `AcademyCertificate` et `ConsultantCertificate` (`src/ui/certificates`) reproduisant les modèles fournis (gabarit 1536 × 1024 mis à l'échelle, polices Cinzel et Playfair Display), version PDF équivalente (`certificate-pdf.ts`). Les modèles d'origine (`modele-*.png`) restent affichés sur `/certificats` comme « Exemple fictif ».
-- Fonds `public/backgrounds/*.webp` (issus de la planche de fonds d'écran).
+- **Certificats** : logo en filigrane (7 % d'opacité) sur l'écran et le PDF ; composants `AcademyCertificate` et `ConsultantCertificate` (`src/ui/certificates`) reproduisant les modèles fournis (gabarit 1536 × 1024 mis à l'échelle, polices Cinzel et Playfair Display), version PDF équivalente (`certificate-pdf.ts`). Les modèles d'origine (`modele-*.png`) restent affichés sur `/certificats` comme « Exemple fictif ».
+- Fond de la page de connexion `public/backgrounds/connexion.webp` : zone d'image du fond d'écran n° 1 de la planche (sans logo, textes peints ni légende de la planche), généré par le même script.
 - **Typographies** : Plus Jakarta Sans (titres, `font-display`), Inter (texte, `font-sans`), auto-hébergées via `next/font`.
 
 ## Couleurs

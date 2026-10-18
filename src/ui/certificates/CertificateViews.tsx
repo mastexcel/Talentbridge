@@ -42,6 +42,11 @@ function Frame({ children, className, specimen, revoked, label }: { children: Re
   );
 }
 
+/** Logo en filigrane, derrière le contenu du certificat. */
+function Watermark({ left, top, width }: { left: number; top: number; width: number }) {
+  return <img src="/brand/tb-wordmark.png" alt="" aria-hidden className="pointer-events-none absolute select-none" style={{ left: u(left), top: u(top), width: u(width), opacity: 0.07 }} />;
+}
+
 function Signature({ s, compact }: { s: SignatoryView; compact?: boolean }) {
   return (
     <div className="flex flex-col items-center text-center" style={{ lineHeight: 1.25 }}>
@@ -103,11 +108,12 @@ export function AcademyCertificate(p: AcademyCertificateProps) {
       {/* Cadre bordeaux + filet doré */}
       <div className="absolute" style={{ inset: u(22), border: `${u(10)} solid #7B1F2B` }} />
       <div className="absolute" style={{ inset: u(42), border: `${u(2)} solid ${GOLD}` }} />
+      <Watermark left={218} top={330} width={1100} />
       <div className="absolute flex flex-col items-center" style={{ inset: u(48), paddingTop: u(10) }}>
         {/* En-tête : Talent Bridge Academy | institution partenaire */}
         <div className="flex w-full items-center justify-center" style={{ gap: u(40), height: u(170) }}>
           <div className="flex flex-col items-center">
-            <img src="/brand/logo-talent-bridge.png" alt="Talent Bridge" style={{ height: u(108) }} />
+            <img src="/brand/tb-wordmark.png" alt="Talent Bridge" style={{ height: u(88) }} />
             <p className="font-[family-name:var(--font-cinzel)] font-bold uppercase text-bordeaux-700" style={{ fontSize: u(30), letterSpacing: u(10), marginTop: u(-6) }}>Academy</p>
             <p className="uppercase" style={{ fontSize: u(12), letterSpacing: u(3), color: NAVY }}>Apprendre · Évoluer · Innover · Impacter</p>
           </div>
@@ -190,6 +196,7 @@ export function ConsultantCertificate(p: ConsultantCertificateProps) {
   return (
     <Frame revoked={p.revoked} specimen={p.specimen} label={`Certification « Consultant vérifié » de ${p.holderName}, numéro ${p.code}`}>
       <div className="absolute" style={{ inset: u(22), border: `${u(3)} solid ${GOLD}` }} />
+      <Watermark left={540} top={360} width={920} />
       {/* Panneau bordeaux */}
       <div className="absolute flex flex-col items-center text-white" style={{ left: u(34), top: u(72), width: u(412), bottom: u(36), borderRadius: u(28), background: "linear-gradient(180deg,#8E1B2C 0%,#5A0E1A 100%)", border: `${u(3)} solid ${GOLD}`, padding: `0 ${u(26)} ${u(24)}` }}>
         <div className="overflow-hidden bg-white/10" style={{ width: u(366), height: u(380), marginTop: u(-40), borderRadius: u(26), border: `${u(4)} solid ${GOLD}` }}>
@@ -223,7 +230,7 @@ export function ConsultantCertificate(p: ConsultantCertificateProps) {
       {/* Partie droite */}
       <div className="absolute flex flex-col items-center" style={{ left: u(470), right: u(40), top: u(36), bottom: u(40) }}>
         <p className="absolute right-0 text-right uppercase" style={{ top: u(30), fontSize: u(13), letterSpacing: u(3), color: NAVY, lineHeight: 1.7 }}>Des talents<br />pour une Afrique<br />plus forte</p>
-        <img src="/brand/logo-talent-bridge.png" alt="Talent Bridge" style={{ height: u(96) }} />
+        <img src="/brand/tb-wordmark.png" alt="Talent Bridge" style={{ height: u(80), marginTop: u(8) }} />
         <p className="uppercase" style={{ fontSize: u(14), letterSpacing: u(4), color: NAVY }}>Plateforme panafricaine d&apos;experts vérifiés</p>
         <p className="uppercase" style={{ fontSize: u(12), letterSpacing: u(4), color: NAVY }}>Expertise · Opportunités · Impact</p>
         <p className="font-[family-name:var(--font-cinzel)] font-bold uppercase text-bordeaux-700" style={{ fontSize: u(100), lineHeight: 1, marginTop: u(8) }}>Certification</p>

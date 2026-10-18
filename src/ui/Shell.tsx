@@ -96,14 +96,15 @@ export function Shell({
 
   const sidebarBase = dark ? "bg-bordeaux-950 text-white" : "bg-white border-r border-line";
   const logo = LOGO_FILES[dark ? "dark" : "light"];
+  const picto = LOGO_FILES.pictogram;
 
   return (
     <div className="min-h-screen">
       {/* Barre latérale bureau */}
       <aside className={cn("fixed inset-y-0 left-0 z-30 hidden flex-col transition-[width] duration-200 lg:flex", sidebarBase, collapsed ? "w-[76px]" : "w-64")}>
-        <div className={cn("flex h-20 items-center px-4", collapsed ? "justify-center" : "justify-between")}>
+        <div className={cn("flex h-16 items-center px-4", collapsed ? "justify-center" : "justify-between")}>
           <Link href="/" aria-label="Talent Bridge — site public">
-            <Image src={logo.src} alt="Talent Bridge" width={logo.w} height={logo.h} className={cn("w-auto", collapsed ? "h-5" : "h-14", dark && "rounded-md")} priority />
+            {collapsed ? <Image src={picto.src} alt="Talent Bridge" width={picto.w} height={picto.h} unoptimized className="h-7 w-auto" priority /> : <Image src={logo.src} alt="Talent Bridge" width={logo.w} height={logo.h} unoptimized className="h-9 w-auto" priority />}
           </Link>
         </div>
         {nav(collapsed)}
@@ -117,8 +118,8 @@ export function Shell({
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu de navigation">
           <button className="absolute inset-0 bg-ink/40" aria-label="Fermer le menu" onClick={() => setMobile(false)} />
           <aside className={cn("absolute inset-y-0 left-0 flex w-72 flex-col shadow-lift animate-fade-in", sidebarBase)}>
-            <div className="flex h-20 items-center justify-between px-4">
-              <Image src={logo.src} alt="Talent Bridge" width={logo.w} height={logo.h} className={cn("h-11 w-auto", dark && "rounded-md")} />
+            <div className="flex h-16 items-center justify-between px-4">
+              <Image src={logo.src} alt="Talent Bridge" width={logo.w} height={logo.h} unoptimized className="h-8 w-auto" />
               <button onClick={() => setMobile(false)} aria-label="Fermer"><X className="h-6 w-6" /></button>
             </div>
             {nav(false)}

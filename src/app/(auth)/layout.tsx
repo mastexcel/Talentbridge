@@ -7,9 +7,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1fr_1.1fr]">
       <aside className="bg-hero relative hidden overflow-hidden text-white lg:block">
-        <Image src="/backgrounds/dark.webp" alt="" fill priority className="object-cover opacity-70" />
+        <Image src="/backgrounds/connexion.webp" alt="" fill priority quality={92} sizes="50vw" className="object-cover object-center" />
+        {/* Dégradés : logo et rubriques sur des zones calmes, image visible au centre */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#3a0710] via-transparent to-[#3a0710]" aria-hidden />
         <div className="relative flex h-full flex-col justify-between p-10">
-          <Logo variant="dark" className="h-20 w-auto rounded-lg" />
+          <Logo variant="dark" tagline className="h-14 w-auto xl:h-16" taglineClassName="text-xs" />
           <ul className="space-y-5">
             {[[Users, "Experts", "Des compétences vérifiées"], [Building2, "Organisations", "Des solutions sur mesure"], [BarChart3, "Résultats", "Un impact concret"]].map(([Icon, t, d]) => {
               const I = Icon as typeof Users;
@@ -25,7 +27,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </aside>
       <main id="contenu" className="flex items-center justify-center bg-white px-4 py-10 sm:px-8">
         <div className="w-full max-w-lg">
-          <div className="mb-8 lg:hidden"><Logo className="h-14 w-auto" /></div>
+          <div className="mb-8 lg:hidden"><Logo className="h-10 w-auto" /></div>
           {children}
         </div>
       </main>

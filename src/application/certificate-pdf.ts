@@ -76,6 +76,13 @@ function left(c: Ctx, text: string, x: number, top: number, size: number, font: 
 const hline = (c: Ctx, x1: number, x2: number, top: number, thick = 2, color = GOLD) => c.page.drawLine({ start: { x: x1 * S, y: H - top * S }, end: { x: x2 * S, y: H - top * S }, thickness: thick * S, color });
 const vline = (c: Ctx, x: number, top: number, bottom: number) => c.page.drawLine({ start: { x: x * S, y: H - top * S }, end: { x: x * S, y: H - bottom * S }, thickness: 2 * S, color: GOLD });
 
+/** Logo en filigrane (gabarit : position et largeur), dessiné avant le contenu. */
+function watermark(c: Ctx, img: PDFImage, left: number, top: number, width: number) {
+  const w = width * S;
+  const h = (img.height / img.width) * w;
+  c.page.drawImage(img, { x: left * S, y: H - top * S - h, width: w, height: h, opacity: 0.07 });
+}
+
 /** Image contenue dans la boîte (gabarit), centrée, proportions conservées. */
 function fit(c: Ctx, img: PDFImage | null, x: number, top: number, w: number, h: number) {
   if (!img) return;
@@ -106,7 +113,7 @@ async function base(title: string) {
     sans: await doc.embedFont(StandardFonts.Helvetica),
     sansBold: await doc.embedFont(StandardFonts.HelveticaBold),
   };
-  const logo = await doc.embedPng(await readFile(path.join(process.cwd(), "public/brand/logo-talent-bridge.png")));
+  const logo = await doc.embedPng(await readFile(path.join(process.cwd(), "public/brand/tb-wordmark.png")));
   return { doc, c: { page, fonts } as Ctx, logo };
 }
 
@@ -146,8 +153,9 @@ export async function academyCertificatePdf(cert: Extract<PublicCertificate, { t
   p.drawRectangle({ x: 0, y: 0, width: W, height: H, color: WHITE });
   p.drawRectangle({ x: 27 * S, y: 27 * S, width: W - 54 * S, height: H - 54 * S, borderColor: BORDEAUX, borderWidth: 10 * S });
   p.drawRectangle({ x: 42 * S, y: 42 * S, width: W - 84 * S, height: H - 84 * S, borderColor: GOLD, borderWidth: 2 * S });
+  watermark(c, logo, 218, 330, 1100);
   // En-tête
-  fit(c, logo, 250, 60, 480, 108);
+  fit(c, logo, 250, 66, 480, 92);
   centered(c, "ACADEMY", 490, 192, 30, c.fonts.serifBold, BORDEAUX, { spacing: 10 });
   centered(c, "APPRENDRE · ÉVOLUER · INNOVER · IMPACTER", 490, 212, 12, c.fonts.sans, NAVY, { spacing: 2 });
   vline(c, 780, 70, 210);
@@ -185,6 +193,7 @@ export async function consultantCertificatePdf(cert: Extract<PublicCertificate, 
   const p = c.page;
   p.drawRectangle({ x: 0, y: 0, width: W, height: H, color: WHITE });
   p.drawRectangle({ x: 22 * S, y: 22 * S, width: W - 44 * S, height: H - 44 * S, borderColor: GOLD, borderWidth: 3 * S });
+  watermark(c, logo, 540, 360, 920);
   // Panneau bordeaux
   p.drawRectangle({ x: 34 * S, y: 36 * S, width: 412 * S, height: (1024 - 72 - 36) * S, color: rgb(0x6e / 255, 0x14 / 255, 0x22 / 255), borderColor: GOLD, borderWidth: 3 * S });
   if (photo) fit(c, photo, 57, 60, 366, 360);

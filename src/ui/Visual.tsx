@@ -169,7 +169,7 @@ export function Visual({ def, priority, className, rounded = true }: { def: Visu
   return (
     <div className={className}>
       <div className={cn("relative w-full overflow-hidden [container-type:inline-size]", rounded && "rounded-3xl shadow-card")} style={{ aspectRatio: `${def.width} / ${def.height}` }}>
-        <Image src={def.src} alt={def.alt} fill priority={priority} sizes="(min-width: 1280px) 1280px, 100vw" className="object-contain" />
+        <Image src={def.src} alt={def.alt} fill priority={priority} quality={92} sizes="(min-width: 1774px) 1774px, 100vw" className="object-contain" />
         <div className="absolute inset-0" style={{ ["--px" as string]: `calc(100cqw / ${def.width})` }}>
           {def.overlays.map((o, i) => (
             // Toujours affichés, même en petit : ils masquent les boutons et chiffres peints.

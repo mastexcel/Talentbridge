@@ -23,7 +23,7 @@ export default async function VerifyCertificate({ searchParams }: { searchParams
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           {CERTIFICATE_MODELS.map((m) => (
             <figure key={m.src} className="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
-              <Image src={m.src} alt={m.alt} width={m.width} height={m.height} className="h-auto w-full" />
+              <Image src={m.src} alt={m.alt} width={m.width} height={m.height} quality={92} sizes="(min-width: 768px) 50vw, 100vw" className="h-auto w-full" />
               <figcaption className="flex items-center justify-between gap-2 px-4 py-3 text-sm"><span className="font-semibold">{m.title}</span><span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Exemple fictif</span></figcaption>
             </figure>
           ))}
