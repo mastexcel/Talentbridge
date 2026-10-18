@@ -1,9 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Building2, ClipboardList, FileSearch, GraduationCap, Handshake, Landmark, Search, ShieldCheck, Sparkles, Target, Users } from "lucide-react";
 import { prisma } from "@/infrastructure/db";
-import { demoAllowed } from "@/infrastructure/env";
-import { getBlocks, publicFaq, publicPartners, publicStats, publicTestimonials } from "@/application/cms.service";
+import { getBlocks, publicFaq, publicPartners, publicTestimonials } from "@/application/cms.service";
+import { publicFigures } from "@/application/figures.service";
+import { Visual } from "@/ui/Visual";
+import { visuals } from "@/ui/visuals";
 import { directoryCardSelect } from "@/application/expert.service";
 import { ButtonLink } from "@/ui/Button";
 import { Badge, DemoBadge } from "@/ui/Badge";
@@ -12,25 +13,25 @@ import { ExpertCard, MissionCard } from "@/ui/cards";
 export const dynamic = "force-dynamic";
 
 const SERVICES = [
-  { icon: Search, title: "Trouver les bons experts", text: "Annuaire qualifié, filtres avancés et profils vérifiés dans tous les domaines.", href: "/experts", img: "/images/experts.webp" },
-  { icon: ClipboardList, title: "Publier vos missions", text: "Décrivez votre besoin, recevez des candidatures, comparez et sélectionnez.", href: "/missions", img: "/images/missions.webp" },
-  { icon: Users, title: "Constituer des équipes projet", text: "Matching intelligent, compétences complémentaires et suivi des livrables.", href: "/services#equipes", img: "/images/equipes.webp" },
-  { icon: FileSearch, title: "Appels d'offres & opportunités", text: "Veille, alertes, matrice de conformité et constitution de consortiums.", href: "/appels-offres", img: "/images/tenders.webp" },
-  { icon: GraduationCap, title: "Talent Bridge Academy", text: "Des formations pour renforcer vos compétences et accélérer votre impact.", href: "/academy", img: "/images/academy.webp" },
-  { icon: ShieldCheck, title: "Vérification & certification", text: "Identité, diplômes, références et compétences contrôlés par notre équipe.", href: "/services#verification", img: "/images/consultants.webp" },
+  { icon: Search, title: "Trouver les bons experts", text: "Annuaire qualifié, filtres avancés et profils vérifiés dans tous les domaines.", href: "/experts" },
+  { icon: ClipboardList, title: "Publier vos missions", text: "Décrivez votre besoin, recevez des candidatures, comparez et sélectionnez.", href: "/missions" },
+  { icon: Users, title: "Constituer des équipes projet", text: "Matching intelligent, compétences complémentaires et suivi des livrables.", href: "/services#equipes" },
+  { icon: FileSearch, title: "Appels d'offres & opportunités", text: "Veille, alertes, matrice de conformité et constitution de consortiums.", href: "/appels-offres" },
+  { icon: GraduationCap, title: "Talent Bridge Academy", text: "Des formations pour renforcer vos compétences et accélérer votre impact.", href: "/academy" },
+  { icon: ShieldCheck, title: "Vérification & certification", text: "Identité, diplômes, références et compétences contrôlés par notre équipe.", href: "/services#verification" },
 ];
 
 const AUDIENCES = [
-  { title: "Pour les consultants", img: "/images/consultants.webp", items: ["Valorisez vos compétences", "Accédez à plus d'opportunités", "Développez votre réseau", "Formations et certifications"], cta: ["Créer mon profil", "/inscription/consultant"], tone: "bg-orange-600" },
-  { title: "Pour les entreprises", img: "/images/entreprises.webp", items: ["Trouvez les bons experts", "Réduisez vos délais de recrutement", "Constituez des équipes performantes", "Sécurisez vos projets"], cta: ["Publier une mission", "/entreprises"], tone: "bg-bordeaux-700" },
-  { title: "Pour les ONG & institutions", img: "/images/ong.webp", items: ["Accédez à un réseau qualifié", "Mobilisez des experts spécialisés", "Renforcez l'impact de vos projets", "Conformité et transparence"], cta: ["Découvrir nos solutions", "/ong-institutions"], tone: "bg-olive-700" },
-  { title: "Pour les cabinets de conseil", img: "/images/cabinets.webp", items: ["Rejoignez un réseau d'experts", "Répondez aux appels d'offres", "Constituez des consortiums", "Développez votre activité"], cta: ["Rejoindre la plateforme", "/cabinets"], tone: "bg-bordeaux-800" },
+  { title: "Pour les consultants", items: ["Valorisez vos compétences", "Accédez à plus d'opportunités", "Développez votre réseau", "Formations et certifications"], cta: ["Créer mon profil", "/inscription/consultant"], tone: "bg-orange-600" },
+  { title: "Pour les entreprises", items: ["Trouvez les bons experts", "Réduisez vos délais de recrutement", "Constituez des équipes performantes", "Sécurisez vos projets"], cta: ["Publier une mission", "/entreprises"], tone: "bg-bordeaux-700" },
+  { title: "Pour les ONG & institutions", items: ["Accédez à un réseau qualifié", "Mobilisez des experts spécialisés", "Renforcez l'impact de vos projets", "Conformité et transparence"], cta: ["Découvrir nos solutions", "/ong-institutions"], tone: "bg-olive-700" },
+  { title: "Pour les cabinets de conseil", items: ["Rejoignez un réseau d'experts", "Répondez aux appels d'offres", "Constituez des consortiums", "Développez votre activité"], cta: ["Rejoindre la plateforme", "/cabinets"], tone: "bg-bordeaux-800" },
 ];
 
 export default async function HomePage() {
-  const [blocks, stats, testimonials, partners, faq, domains, featured, missions] = await Promise.all([
+  const [blocks, figures, testimonials, partners, faq, domains, featured, missions] = await Promise.all([
     getBlocks(["home.hero", "home.promise", "home.about"]),
-    publicStats(demoAllowed()),
+    publicFigures(),
     publicTestimonials(),
     publicPartners(),
     publicFaq(),
@@ -39,64 +40,37 @@ export default async function HomePage() {
     prisma.mission.findMany({ where: { status: { in: ["PUBLISHED", "SHORTLISTING"] }, visibility: "PUBLIC" }, orderBy: { publishedAt: "desc" }, take: 3, include: { organization: { select: { name: true, status: true } }, domain: { select: { nameFr: true } }, requirements: { include: { skill: { select: { nameFr: true } } } } } }),
   ]);
   const hero = blocks["home.hero"];
+  const v = visuals(figures);
 
   return (
     <>
-      {/* 1. Hero */}
-      <section className="bg-hero relative overflow-hidden text-white">
-        <Image src="/backgrounds/dark-wide.webp" alt="" fill priority className="object-cover opacity-25" />
-        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
-          <div className="animate-fade-in">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-orange-200">Connecter les experts · Transformer les compétences en résultats</p>
-            <h1 className="mt-4 text-4xl font-extrabold leading-tight sm:text-5xl">
-              {hero?.title?.replace("défis de demain.", "") ?? "Des experts d'aujourd'hui pour les "}
-              <span className="text-orange-400">défis de demain.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-lg text-white/85">{hero?.body}</p>
-            {/* 2. Recherche rapide */}
-            <form action="/experts" className="mt-7 flex max-w-xl gap-2 rounded-2xl bg-white p-2 shadow-lift" role="search">
-              <label htmlFor="q-home" className="sr-only">Métier, compétence, secteur</label>
-              <input id="q-home" name="q" placeholder="Métier, compétence, secteur…" className="h-11 min-w-0 flex-1 rounded-xl px-3 text-ink outline-none" />
-              <button className="inline-flex h-11 items-center gap-2 rounded-xl bg-orange-600 px-4 font-semibold text-white hover:bg-orange-700">
-                <Search className="h-4 w-4" /> <span className="hidden sm:inline">Rechercher</span>
-              </button>
-            </form>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {domains.map((d) => (
-                <Link key={d.id} href={`/experts?domain=${d.slug}`} className="rounded-full border border-white/30 px-3 py-1 text-xs text-white/90 hover:bg-white/10">
-                  {d.nameFr}
-                </Link>
-              ))}
-            </div>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <ButtonLink href="/experts" size="lg">Trouver un expert <ArrowRight className="h-4 w-4" /></ButtonLink>
-              <ButtonLink href="/organisation/missions/nouvelle" size="lg" variant="light">Publier une mission</ButtonLink>
-            </div>
+      {/* 1. Hero : visuel officiel ; boutons et chiffres rendus actifs (chiffres réels) */}
+      <section className="bg-white">
+        <h1 className="sr-only">{hero?.title ?? "Des experts d'aujourd'hui pour les défis de demain."}</h1>
+        <Visual def={v.accueilHero} priority rounded={false} className="mx-auto max-w-[1774px]" />
+        {/* 2. Recherche rapide par domaine */}
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+          <form action="/experts" className="mx-auto flex max-w-2xl gap-2 rounded-2xl border border-line bg-white p-2 shadow-card" role="search">
+            <label htmlFor="q-home" className="sr-only">Métier, compétence, secteur</label>
+            <input id="q-home" name="q" placeholder="Métier, compétence, secteur…" className="h-11 min-w-0 flex-1 rounded-xl px-3 text-ink outline-none" />
+            <button className="inline-flex h-11 items-center gap-2 rounded-xl bg-orange-600 px-4 font-semibold text-white hover:bg-orange-700">
+              <Search className="h-4 w-4" /> <span className="hidden sm:inline">Rechercher</span>
+            </button>
+          </form>
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {domains.map((d) => (
+              <Link key={d.id} href={`/experts?domain=${d.slug}`} className="rounded-full border border-line px-3 py-1 text-xs text-ink/80 hover:border-orange-400 hover:text-bordeaux-700">
+                {d.nameFr}
+              </Link>
+            ))}
           </div>
-          <div className="relative hidden lg:block">
-            <Image src="/images/hero.webp" alt="Experts africains devant un pont reliant les villes du continent" width={780} height={365} className="rounded-3xl border border-white/20 shadow-lift" priority />
-            <p className="absolute -bottom-5 right-6 rounded-2xl bg-white px-4 py-3 font-display text-sm font-bold text-bordeaux-700 shadow-lift">L'expertise africaine au service d'un avenir durable.</p>
-          </div>
+          {figures.isDemo && <p className="mt-3 hidden text-center text-xs text-slate md:block">Environnement de démonstration : les chiffres affichés sont calculés sur des données fictives.</p>}
         </div>
-      </section>
-
-      {/* 4. Statistiques (calculées en direct ou signalées comme démonstratives) */}
-      <section className="border-b border-line bg-white">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-8 sm:px-6 md:grid-cols-4">
-          {stats.map((s) => (
-            <div key={s.key} className="text-center">
-              <p className="font-display text-3xl font-extrabold text-bordeaux-700">{s.value}</p>
-              <p className="mt-1 text-sm text-slate">{s.label}</p>
-              {s.isDemo && <DemoBadge />}
-            </div>
-          ))}
-        </div>
-        <p className="pb-4 text-center text-xs text-slate">{stats.some((s) => s.isDemo) ? "Environnement de démonstration : chiffres calculés sur des données fictives." : "Chiffres calculés en temps réel sur la plateforme."}</p>
       </section>
 
       {/* 3. Présentation */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <div className="grid items-center gap-10 lg:grid-cols-2">
+        <div className="max-w-3xl">
           <div>
             <Badge tone="orange">Qui sommes-nous</Badge>
             <h2 className="mt-3 text-3xl font-extrabold text-ink">{blocks["home.about"]?.title}</h2>
@@ -106,8 +80,8 @@ export default async function HomePage() {
               <p className="mt-2 text-sm text-orange-900">{blocks["home.promise"]?.body}</p>
             </div>
           </div>
-          <Image src="/images/impact.webp" alt="Carte de l'Afrique reliée par des réseaux lumineux au-dessus d'un pont" width={630} height={285} className="w-full rounded-3xl object-cover shadow-card" />
         </div>
+        <Visual def={v.solutions} className="mt-10" />
       </section>
 
       {/* 5. Catalogue des services */}
@@ -118,7 +92,6 @@ export default async function HomePage() {
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {SERVICES.map((s) => (
               <Link key={s.title} href={s.href} className="group overflow-hidden rounded-2xl border border-line bg-white shadow-card transition hover:-translate-y-1 hover:shadow-lift">
-                <Image src={s.img} alt="" width={420} height={220} className="h-40 w-full object-cover" />
                 <div className="p-5">
                   <s.icon className="h-6 w-6 text-orange-600" />
                   <h3 className="mt-2 font-display text-lg font-bold group-hover:text-bordeaux-700">{s.title}</h3>
@@ -150,6 +123,10 @@ export default async function HomePage() {
             );
           })}
         </ol>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+        <Visual def={v.equipesProjet} />
       </section>
 
       {/* 7. Experts mis en avant */}
@@ -195,7 +172,6 @@ export default async function HomePage() {
                   {a.cta[0]} <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
-              <Image src={a.img} alt="" width={170} height={220} className="hidden w-40 object-cover sm:block" />
             </div>
           ))}
         </div>
@@ -238,6 +214,7 @@ export default async function HomePage() {
 
       {/* 12. Appels à l'action */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        <Visual def={v.plateforme} className="mb-10" />
         <div className="grid gap-5 md:grid-cols-3">
           {[
             [Sparkles, "Vous êtes expert ?", "Créez votre profil, faites-le vérifier et recevez des missions.", "/inscription/consultant", "Créer mon profil", "bg-orange-600"],

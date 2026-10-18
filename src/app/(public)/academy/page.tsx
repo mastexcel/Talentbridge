@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { Clock, GraduationCap, Users } from "lucide-react";
 import { catalog } from "@/application/academy.service";
+import { publicFigures } from "@/application/figures.service";
+import { Visual } from "@/ui/Visual";
+import { visuals } from "@/ui/visuals";
 import { formatMoney } from "@/domain/money";
 import { Badge, DemoBadge } from "@/ui/Badge";
 import { EmptyState } from "@/ui/Feedback";
@@ -14,18 +16,17 @@ export const dynamic = "force-dynamic";
 
 export default async function AcademyPage({ searchParams }: { searchParams: Promise<{ q?: string; level?: string }> }) {
   const sp = await searchParams;
-  const courses = await catalog({ q: sp.q?.slice(0, 80), level: sp.level });
+  const [courses, figures] = await Promise.all([catalog({ q: sp.q?.slice(0, 80), level: sp.level }), publicFigures()]);
   return (
     <>
-      <section className="bg-hero text-white">
-        <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-12 sm:px-6 md:grid-cols-2">
+      <section className="bg-white">
+        <Visual def={visuals(figures).formation} priority rounded={false} className="mx-auto max-w-[1774px]" />
+        <div className="mx-auto flex max-w-7xl flex-wrap items-end justify-between gap-4 px-4 pt-8 sm:px-6">
           <div>
-            <p className="font-semibold text-orange-300">Talent Bridge</p>
-            <h1 className="text-4xl font-extrabold">ACADEMY</h1>
-            <p className="mt-3 text-lg text-white/85">Des formations pour renforcer vos compétences et accélérer votre impact. Certificats vérifiables par identifiant unique et QR code.</p>
-            <div className="mt-5 flex gap-3"><ButtonLink href="#catalogue">Explorer les formations</ButtonLink><ButtonLink href="/academy/formateur" variant="light">Espace formateur</ButtonLink></div>
+            <h1 className="text-3xl font-extrabold text-ink">Talent Bridge Academy</h1>
+            <p className="mt-2 max-w-2xl text-slate">Des formations pour renforcer vos compétences et accélérer votre impact. Certificats vérifiables par identifiant unique et QR code.</p>
           </div>
-          <Image src="/images/academy.webp" alt="Apprenante suivant une formation en ligne" width={520} height={340} className="hidden rounded-3xl md:block" />
+          <div className="flex gap-3"><ButtonLink href="#catalogue">Explorer les formations</ButtonLink><ButtonLink href="/academy/formateur" variant="outline">Espace formateur</ButtonLink></div>
         </div>
       </section>
       <div id="catalogue" className="mx-auto max-w-7xl px-4 py-10 sm:px-6">

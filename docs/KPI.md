@@ -35,6 +35,10 @@ Implémentation : `src/application/analytics.service.ts` (`ceoKpis`) et `src/app
 | Experts par pays, organisations par type | Répartitions | `groupBy` |
 | Entonnoir consultants | Inscrits → profil ≥ 60 % → ont candidaté → ont obtenu un contrat (cohorte inscrite dans la période) | 4 `count` |
 
+## Chiffres des visuels du site
+
+Les chiffres affichés sur les visuels (experts vérifiés, organisations validées, missions réalisées, pays couverts, appels d'offres référencés, bailleurs et institutions, pays des appels d'offres) sont calculés par `publicFigures()` (`src/application/figures.service.ts`) à chaque affichage : experts avec un badge actif, organisations au statut VERIFIED, contrats COMPLETED, pays distincts des experts et organisations validées, appels d'offres non annulés et acheteurs distincts. Données de démonstration comptées uniquement hors production (ou démo hébergée explicite), avec le marqueur « Démo ». Test : `tests/integration/figures.test.ts`.
+
 ## Statistiques publiques (site)
 
 Chaque chiffre de la page d'accueil (`public_stats`) a une source : `LIVE` (calculé sur les données réelles, démo exclue) ou `MANUAL` (valeur saisie par un administrateur `CONTENT_MANAGE` dans `/admin/contenus`, à réserver aux chiffres sourcés hors plateforme). Une valeur manuelle marquée démo, ou un calcul incluant la démo, est affiché avec le badge « Démo ». Toute modification est journalisée.

@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarClock, MapPin } from "lucide-react";
 import { prisma } from "@/infrastructure/db";
+import { publicFigures } from "@/application/figures.service";
+import { Visual } from "@/ui/Visual";
+import { visuals } from "@/ui/visuals";
 import { searchTenders } from "@/application/tender.service";
 import { daysUntil } from "@/domain/tenders";
 import { PageHeader, Pagination } from "@/ui/Page";
@@ -17,13 +20,16 @@ export const dynamic = "force-dynamic";
 export default async function TendersPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
-  const [r, countries, domains] = await Promise.all([
+  const [r, countries, domains, figures] = await Promise.all([
     searchTenders({ q: sp.q?.slice(0, 100), country: sp.country?.length === 2 ? sp.country : undefined, type: ["TENDER", "EOI", "RFP"].includes(sp.type ?? "") ? sp.type : undefined, domain: sp.domain, page }),
     prisma.country.findMany({ orderBy: { nameFr: "asc" } }),
     prisma.expertiseDomain.findMany({ orderBy: { sortOrder: "asc" } }),
+    publicFigures(),
   ]);
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+    <>
+    <Visual def={visuals(figures).appelsOffres} priority rounded={false} className="mx-auto max-w-[1774px] bg-white" />
+    <div id="liste" className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <PageHeader title="Appels d'offres & opportunités" description="Restez informé, analysez les opportunités, préparez vos candidatures et collaborez avec d'autres experts." actions={<ButtonLink href="/espace/alertes" variant="outline">Mes alertes</ButtonLink>} />
       <form className="mb-6 grid gap-2 rounded-2xl border border-line bg-white p-4 shadow-card sm:grid-cols-5" role="search">
         <Input name="q" defaultValue={sp.q} placeholder="Mot-clé, acheteur…" className="sm:col-span-2" aria-label="Mot-clé" />
@@ -47,5 +53,6 @@ export default async function TendersPage({ searchParams }: { searchParams: Prom
       )}
       <Pagination page={page} pages={r.pages} params={sp} basePath="/appels-offres" />
     </div>
+    </>
   );
 }

@@ -7,7 +7,7 @@
 | Suite | Contenu | Résultat |
 |---|---|---|
 | Unitaires (`tests/unit`, 43) | Matching (pondérations, critères, équipe, extraction de compétences), workflows, permissions, argent/TVA, fichiers, signatures webhook, S3 SigV4, sécurité | ✅ 43/43 |
-| Intégration (`tests/integration`, 28) | Étanchéité multi-tenant, authentification, vérification et badges, facturation/paiements/webhooks/renouvellements, marketplace (quota d'offre, candidatures, contrats), API (idempotence, CSRF, session, simulateur refusé en production) | ✅ 28/28 |
+| Intégration (`tests/integration`, 30) | Étanchéité multi-tenant, authentification, vérification et badges, facturation/paiements/webhooks/renouvellements, marketplace (quota d'offre, candidatures, contrats), API (idempotence, CSRF, session, simulateur refusé en production), chiffres publics | ✅ 30/30 |
 | E2E Playwright (`tests/e2e`, 16) | 14 parcours critiques (inscription consultant, profil, vérification, inscription organisation + validation, publication, matching, candidature, sélection et contrat, projet, appel d'offres, Academy + certificat, souscription en mode test, facture PDF, CEO Dashboard) + 2 tests mobiles | ✅ 16/16 (une exécution précédente a vu un échec isolé du test « tiroir mobile », non reproduit sur les 3 exécutions suivantes) |
 | Qualité | ESLint, TypeScript strict, build de production, `npm audit --omit=dev` | ✅ 0 erreur, 0 vulnérabilité |
 

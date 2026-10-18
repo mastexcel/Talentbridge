@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { SlidersHorizontal } from "lucide-react";
 import { prisma } from "@/infrastructure/db";
+import { publicFigures } from "@/application/figures.service";
+import { Visual } from "@/ui/Visual";
+import { visuals } from "@/ui/visuals";
 import { searchExperts } from "@/application/expert.service";
 import { expertSearchSchema } from "@/application/schemas";
 import { currentUser } from "@/lib/session";
@@ -18,16 +21,19 @@ export default async function ExpertsPage({ searchParams }: { searchParams: Prom
   const parsed = expertSearchSchema.safeParse(Object.fromEntries(Object.entries(sp).filter(([, v]) => v)));
   const filters = parsed.success ? parsed.data : expertSearchSchema.parse({});
   const user = await currentUser();
-  const [result, countries, domains, skills] = await Promise.all([
+  const [result, countries, domains, skills, figures] = await Promise.all([
     searchExperts(user, filters),
     prisma.country.findMany({ where: { isActive: true }, orderBy: { nameFr: "asc" } }),
     prisma.expertiseDomain.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.skill.findMany({ where: { isActive: true }, orderBy: { nameFr: "asc" } }),
+    publicFigures(),
   ]);
   const f = (name: keyof typeof filters) => (filters[name] as string | number | undefined)?.toString() ?? "";
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+    <>
+    <Visual def={visuals(figures).trouverExperts} priority rounded={false} className="mx-auto max-w-[1774px] bg-white" />
+    <div id="resultats" className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <PageHeader title="Annuaire des experts" description="Recherchez parmi des profils qualifiés. Les coordonnées ne sont jamais affichées : contactez les experts via la messagerie sécurisée." />
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <form className="h-fit rounded-2xl border border-line bg-white p-5 shadow-card lg:sticky lg:top-24" role="search" aria-label="Filtres de recherche">
@@ -69,5 +75,6 @@ export default async function ExpertsPage({ searchParams }: { searchParams: Prom
         </section>
       </div>
     </div>
+    </>
   );
 }

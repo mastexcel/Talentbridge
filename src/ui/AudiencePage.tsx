@@ -1,20 +1,20 @@
-import Image from "next/image";
 import { BadgeCheck } from "lucide-react";
+import { publicFigures } from "@/application/figures.service";
 import { ButtonLink } from "./Button";
+import { Visual } from "./Visual";
+import { visuals } from "./visuals";
 
 /** Gabarit des pages par public cible (cabinets, entreprises, ONG & institutions). */
-export function AudiencePage({ eyebrow, title, intro, image, benefits, steps, cta }: { eyebrow: string; title: string; intro: string; image: string; benefits: { title: string; text: string }[]; steps: string[]; cta: { label: string; href: string }[] }) {
+export async function AudiencePage({ eyebrow, title, intro, visual, benefits, steps, cta }: { eyebrow: string; title: string; intro: string; visual: "entreprises" | "ong" | "cabinets"; benefits: { title: string; text: string }[]; steps: string[]; cta: { label: string; href: string }[] }) {
   return (
     <>
-      <section className="bg-hero text-white">
-        <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-14 sm:px-6 md:grid-cols-[1.2fr_1fr]">
-          <div>
-            <p className="font-semibold uppercase tracking-wide text-orange-300">{eyebrow}</p>
-            <h1 className="mt-2 text-4xl font-extrabold leading-tight">{title}</h1>
-            <p className="mt-4 text-lg text-white/85">{intro}</p>
-            <div className="mt-6 flex flex-wrap gap-3">{cta.map((c, i) => <ButtonLink key={c.href} href={c.href} variant={i === 0 ? "primary" : "light"} size="lg">{c.label}</ButtonLink>)}</div>
-          </div>
-          <Image src={image} alt="" width={420} height={420} className="mx-auto hidden h-72 w-auto rounded-3xl object-cover md:block" />
+      <section className="bg-white">
+        <Visual def={visuals(await publicFigures())[visual]} priority rounded={false} className="mx-auto max-w-[1774px]" />
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+          <p className="font-semibold uppercase tracking-wide text-orange-700">{eyebrow}</p>
+          <h1 className="mt-2 text-3xl font-extrabold leading-tight text-ink">{title}</h1>
+          <p className="mt-3 max-w-3xl text-lg text-slate">{intro}</p>
+          <div className="mt-5 flex flex-wrap gap-3">{cta.map((c, i) => <ButtonLink key={c.href} href={c.href} variant={i === 0 ? "primary" : "outline"} size="lg">{c.label}</ButtonLink>)}</div>
         </div>
       </section>
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">

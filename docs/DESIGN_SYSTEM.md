@@ -4,8 +4,10 @@ Tokens définis dans `src/app/globals.css` (Tailwind CSS 4, bloc `@theme`) ; com
 
 ## Identité
 
-- **Logo officiel** (fourni, non redessiné) : `public/brand/logo-main.png` (horizontal), `logo-vertical.png`, `logo-compact.png`, `logo-icon.png` (pictogramme, favicon), `logo-mono.png`, `logo-wordmark.png`, `logo-dark.png` (fond sombre). Planches sources : `docs/brand-sources/`. Composant : `<Logo variant="main|compact|icon|dark" />`.
-- **Visuels** : `public/images/*.webp` (issus des flyers fournis), fonds `public/backgrounds/*.webp`.
+- **Logos officiels utilisés tels que fournis (fichiers non modifiés)** : `public/brand/logo-talent-bridge.png` (fond blanc) et `logo-talent-bridge-bordeaux.png` (cartouche bordeaux, fonds sombres). Composant : `<Logo variant="light|dark" />`. Le logo vertical fourni (`docs/brand-sources/logo-vertical-fourni.png`) contient un damier « transparent » incrusté dans l'image : il n'est pas affiché tant qu'une version PNG réellement transparente n'est pas fournie. Les favicons restent des recadrages du pictogramme (un favicon doit être carré).
+- **Visuels officiels** : `public/visuels/*.png`, affichés sans modification par `<Visual>` (`src/ui/Visual.tsx`, catalogue `src/ui/visuals.ts`). Seules des zones sont recouvertes par du HTML positionné en coordonnées de l'image : boutons peints → vrais liens ; chiffres peints → chiffres réels (`publicFigures()`) ; barres de recherche → vrais formulaires ; pastilles et cartes → zones cliquables. Sous 768 px, chiffres et actions sont repris lisiblement sous le visuel. Pour ajouter un visuel : copier le fichier dans `public/visuels`, mesurer les zones (x, y, largeur, hauteur en pixels de l'image) et les déclarer dans `visuals.ts`.
+- **Modèles de certificats** (`modele-*.png`) : affichés sur `/certificats` avec la mention « Exemple fictif » ; noms, numéros et QR codes peints ne sont pas vérifiables.
+- Fonds `public/backgrounds/*.webp` (issus de la planche de fonds d'écran).
 - **Typographies** : Plus Jakarta Sans (titres, `font-display`), Inter (texte, `font-sans`), auto-hébergées via `next/font`.
 
 ## Couleurs
