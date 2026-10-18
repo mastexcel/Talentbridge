@@ -62,7 +62,9 @@ export function Shell({
   const dark = variant === "admin";
   const active = (href: string) => pathname === href || (href !== "/espace" && href !== "/organisation" && href !== "/admin" && pathname.startsWith(href + "/"));
 
-  const nav = (compact: boolean) => (
+  // `inDrawer` : pas de préchargement des ~20 liens à l'ouverture du tiroir mobile (charge inutile,
+  // et un clic pendant ces préchargements pouvait laisser la navigation en suspens).
+  const nav = (compact: boolean, inDrawer = false) => (
     <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Navigation de l'espace">
       {sections.map((s) => (
         <div key={s.title} className="mb-5">
@@ -72,6 +74,8 @@ export function Shell({
               <li key={i.href}>
                 <Link
                   href={i.href}
+                  prefetch={inDrawer ? false : undefined}
+                  onClick={inDrawer ? () => setMobile(false) : undefined}
                   title={compact ? i.label : undefined}
                   aria-current={active(i.href) ? "page" : undefined}
                   className={cn(
@@ -122,7 +126,7 @@ export function Shell({
               <Image src={logo.src} alt="Talent Bridge" width={logo.w} height={logo.h} unoptimized className="h-8 w-auto" />
               <button onClick={() => setMobile(false)} aria-label="Fermer"><X className="h-6 w-6" /></button>
             </div>
-            {nav(false)}
+            {nav(false, true)}
           </aside>
         </div>
       )}

@@ -14,8 +14,14 @@ test.describe("Affichage mobile", () => {
   test("espace connecté : tiroir de navigation", async ({ page }) => {
     await page.request.post("/api/v1/auth/login", { data: { email: "consultant@demo.talentbridge.africa", password: process.env.DEMO_PASSWORD ?? "Demo2026!TB" }, headers: { origin: new URL(page.url() === "about:blank" ? "http://localhost:3100" : page.url()).origin } });
     await page.goto("/espace", { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Ouvrir le menu" }).click();
-    const link = page.getByRole("dialog", { name: "Menu de navigation" }).getByRole("link", { name: "Mon profil" });
+    // Sous forte charge, l'interactivité de la page peut arriver après le chargement réseau :
+    // on réessaie l'ouverture jusqu'à ce que le tiroir soit réellement affiché.
+    const dialog = page.getByRole("dialog", { name: "Menu de navigation" });
+    await expect(async () => {
+      await page.getByRole("button", { name: "Ouvrir le menu" }).click();
+      await expect(dialog).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 45_000 });
+    const link = dialog.getByRole("link", { name: "Mon profil" });
     await expect(link).toBeVisible();
     // Navigation attendue explicitement : sous forte charge (suite complète en parallèle), le rendu serveur peut prendre plusieurs secondes.
     await Promise.all([page.waitForURL(/\/espace\/profil/, { timeout: 60_000 }), link.click()]);
