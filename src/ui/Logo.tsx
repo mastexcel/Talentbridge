@@ -1,18 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 
-/** Logo officiel (fichiers fournis, non redessinés). */
-export function Logo({ variant = "compact", className, href = "/" }: { variant?: "compact" | "dark" | "main" | "icon" | "vertical" | "mono"; className?: string; href?: string | null }) {
-  const files = {
-    compact: { src: "/brand/logo-wordmark.png", w: 1123, h: 207 },
-    main: { src: "/brand/logo-main.png", w: 1123, h: 286 },
-    dark: { src: "/brand/logo-dark.png", w: 674, h: 204 },
-    icon: { src: "/brand/logo-icon.png", w: 320, h: 182 },
-    vertical: { src: "/brand/logo-vertical.png", w: 375, h: 257 },
-    mono: { src: "/brand/logo-mono.png", w: 579, h: 155 },
-  } as const;
-  const f = files[variant];
-  const img = <Image src={f.src} alt="Talent Bridge" width={f.w} height={f.h} className={className ?? "h-9 w-auto"} priority />;
+/**
+ * Logos officiels, utilisés tels que fournis (fichiers non modifiés) :
+ *  - light : fond blanc, pour les fonds clairs ;
+ *  - dark  : cartouche bordeaux, pour les fonds sombres.
+ */
+export const LOGO_FILES = {
+  light: { src: "/brand/logo-talent-bridge.png", w: 2172, h: 724 },
+  dark: { src: "/brand/logo-talent-bridge-bordeaux.png", w: 2172, h: 724 },
+} as const;
+
+export function Logo({ variant = "light", className, href = "/" }: { variant?: keyof typeof LOGO_FILES; className?: string; href?: string | null }) {
+  const f = LOGO_FILES[variant];
+  const img = <Image src={f.src} alt="Talent Bridge" width={f.w} height={f.h} className={className ?? "h-12 w-auto"} priority />;
   return href ? (
     <Link href={href} aria-label="Talent Bridge — accueil" className="inline-flex shrink-0 items-center">
       {img}

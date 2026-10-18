@@ -31,7 +31,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ co
         {valid ? "Certificat authentique et valide, délivré par Talent Bridge Academy." : `Certificat révoqué le ${cert.revokedAt!.toLocaleDateString("fr-FR")}${cert.revokeReason ? ` : ${cert.revokeReason}` : ""}.`}
       </div>
       <article className="rounded-3xl border-4 border-double border-bordeaux-200 bg-white p-8 text-center shadow-lift sm:p-12">
-        <Logo variant="main" href={null} className="mx-auto h-16 w-auto" />
+        <Logo href={null} className="mx-auto h-20 w-auto" />
         <p className="mt-8 text-sm uppercase tracking-[0.3em] text-slate">Certificat de réussite</p>
         <p className="mt-6 text-slate">décerné à</p>
         <h1 className="mt-1 text-3xl font-extrabold text-bordeaux-700">{cert.holderName}</h1>

@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, Building2, ChevronsLeft, ChevronsRight, LogOut, Menu, MessageSquare, X } from "lucide-react";
 import { NAV_ICONS, type NavIconName } from "./nav-icons";
+import { LOGO_FILES } from "./Logo";
 import { cn } from "./cn";
 import { api } from "./api";
 
@@ -94,15 +95,15 @@ export function Shell({
   );
 
   const sidebarBase = dark ? "bg-bordeaux-950 text-white" : "bg-white border-r border-line";
-  const logo = dark ? "/brand/logo-dark.png" : "/brand/logo-wordmark.png";
+  const logo = LOGO_FILES[dark ? "dark" : "light"];
 
   return (
     <div className="min-h-screen">
       {/* Barre latérale bureau */}
       <aside className={cn("fixed inset-y-0 left-0 z-30 hidden flex-col transition-[width] duration-200 lg:flex", sidebarBase, collapsed ? "w-[76px]" : "w-64")}>
-        <div className={cn("flex h-16 items-center px-4", collapsed ? "justify-center" : "justify-between")}>
+        <div className={cn("flex h-20 items-center px-4", collapsed ? "justify-center" : "justify-between")}>
           <Link href="/" aria-label="Talent Bridge — site public">
-            {collapsed ? <Image src="/brand/logo-icon.png" alt="Talent Bridge" width={40} height={23} /> : <Image src={logo} alt="Talent Bridge" width={170} height={36} className={cn("h-8 w-auto", dark && "h-10 rounded-lg")} />}
+            <Image src={logo.src} alt="Talent Bridge" width={logo.w} height={logo.h} className={cn("w-auto", collapsed ? "h-5" : "h-14", dark && "rounded-md")} priority />
           </Link>
         </div>
         {nav(collapsed)}
@@ -116,8 +117,8 @@ export function Shell({
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu de navigation">
           <button className="absolute inset-0 bg-ink/40" aria-label="Fermer le menu" onClick={() => setMobile(false)} />
           <aside className={cn("absolute inset-y-0 left-0 flex w-72 flex-col shadow-lift animate-fade-in", sidebarBase)}>
-            <div className="flex h-16 items-center justify-between px-4">
-              <Image src={logo} alt="Talent Bridge" width={150} height={32} className="h-8 w-auto" />
+            <div className="flex h-20 items-center justify-between px-4">
+              <Image src={logo.src} alt="Talent Bridge" width={logo.w} height={logo.h} className={cn("h-11 w-auto", dark && "rounded-md")} />
               <button onClick={() => setMobile(false)} aria-label="Fermer"><X className="h-6 w-6" /></button>
             </div>
             {nav(false)}

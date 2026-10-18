@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description: "Plateforme panafricaine de mobilisation, de vérification et de mise en relation d'experts avec les cabinets, entreprises, ONG et institutions.",
   applicationName: "Talent Bridge",
   icons: { apple: "/brand/apple-touch-icon.png" },
-  openGraph: { title: "Talent Bridge", description: "Des experts d'aujourd'hui pour les défis de demain.", locale: "fr_FR", siteName: "Talent Bridge", type: "website", images: [{ url: "/brand/og.jpg", width: 1200, height: 630 }] },
+  openGraph: { title: "Talent Bridge", description: "Des experts d'aujourd'hui pour les défis de demain.", locale: "fr_FR", siteName: "Talent Bridge", type: "website", images: [{ url: "/brand/logo-talent-bridge.png", width: 2172, height: 724 }] },
 };
 
 export const viewport: Viewport = { themeColor: "#7B1F2B", width: "device-width", initialScale: 1 };

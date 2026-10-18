@@ -21,8 +21,8 @@ export default async function PublicLayout({ children }: { children: React.React
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
-        <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Logo className="h-8 w-auto sm:h-9" />
+        <div className="relative mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+          <Logo className="h-14 w-auto sm:h-[72px]" />
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigation principale">
             {links.map((l) => (
               <Link key={l.href} href={l.href} className="rounded-lg px-3 py-2 text-sm font-medium text-ink/80 hover:bg-mist hover:text-bordeaux-700">
@@ -49,7 +49,7 @@ export default async function PublicLayout({ children }: { children: React.React
       <footer className="bg-bordeaux-950 text-white/80">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <Logo variant="dark" className="h-14 w-auto rounded-xl" />
+            <Logo variant="dark" className="h-20 w-auto rounded-lg" />
             <p className="mt-4 max-w-sm text-sm">{t("footer.tagline")}</p>
             <p className="mt-3 max-w-sm text-xs text-white/60">Plateforme panafricaine : experts, cabinets, entreprises, ONG, institutions, bailleurs et organismes de formation.</p>
           </div>
