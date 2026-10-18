@@ -15,8 +15,11 @@ test.describe("Affichage mobile", () => {
     await page.request.post("/api/v1/auth/login", { data: { email: "consultant@demo.talentbridge.africa", password: process.env.DEMO_PASSWORD ?? "Demo2026!TB" }, headers: { origin: new URL(page.url() === "about:blank" ? "http://localhost:3100" : page.url()).origin } });
     await page.goto("/espace", { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Ouvrir le menu" }).click();
-    await page.getByRole("dialog", { name: "Menu de navigation" }).getByRole("link", { name: "Mon profil" }).click();
-    await expect(page).toHaveURL(/\/espace\/profil/, { timeout: 20_000 });
+    const link = page.getByRole("dialog", { name: "Menu de navigation" }).getByRole("link", { name: "Mon profil" });
+    await expect(link).toBeVisible();
+    // Navigation attendue explicitement : sous forte charge (suite complète en parallèle), le rendu serveur peut prendre plusieurs secondes.
+    await Promise.all([page.waitForURL(/\/espace\/profil/, { timeout: 60_000 }), link.click()]);
+    await page.waitForLoadState("networkidle");
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });

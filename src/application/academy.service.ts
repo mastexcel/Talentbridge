@@ -13,6 +13,7 @@ import type { SessionUser } from "./auth.service";
 import { audit } from "./audit.service";
 import { notify } from "./notification.service";
 import { createAndIssueInvoice, defaultTaxBps, startPayment } from "./billing.service";
+import { courseCertificateState, courseSnapshot } from "./certificate.service";
 import type { PaymentMethod } from "@/infrastructure/payments/provider";
 
 export async function catalog(filter: { q?: string; level?: string } = {}, db: Db = prisma) {
@@ -114,14 +115,15 @@ export async function claimCertificate(user: SessionUser, courseId: string, db: 
   const e = await myEnrollment(user, courseId, db);
   const existing = await db.learningCertificate.findUnique({ where: { enrollmentId: e.id } });
   if (existing) return existing;
-  const course = await db.course.findUniqueOrThrow({ where: { id: courseId }, include: { assessments: { where: { isFinal: true } } } });
+  const course = await db.course.findUniqueOrThrow({ where: { id: courseId }, include: { assessments: { where: { isFinal: true } }, issuer: true, tbSignatory: true } });
   const [lessonsTotal, lessonsDone] = await Promise.all([db.lesson.count({ where: { module: { courseId } } }), db.lessonProgress.count({ where: { enrollmentId: e.id } })]);
   const finalIds = course.assessments.map((a) => a.id);
   const best = finalIds.length ? await db.assessmentAttempt.aggregate({ where: { assessmentId: { in: finalIds }, userId: user.id }, _max: { scorePct: true } }) : null;
   const elig = certificateEligibility({ lessonsTotal, lessonsDone, hasFinal: finalIds.length > 0, bestScorePct: best?._max.scorePct ?? null, passingScore: course.passingScore });
   if (!elig.eligible) throw new DomainError("INVALID_STATE", `Conditions non remplies : ${elig.reasons.join(" ")}`);
+  const snapshot = courseSnapshot(course);
   return inTransaction(db, async (tx) => {
-    const cert = await tx.learningCertificate.create({ data: { code: `TB-${humanCode(4)}-${humanCode(4)}`, enrollmentId: e.id, holderName: `${user.firstName} ${user.lastName}`, courseTitle: course.title, scorePct: best?._max.scorePct ?? 100 } });
+    const cert = await tx.learningCertificate.create({ data: { code: `TB-${humanCode(4)}-${humanCode(4)}`, enrollmentId: e.id, holderName: `${user.firstName} ${user.lastName}`, courseTitle: course.title, scorePct: best?._max.scorePct ?? 100, snapshot: snapshot as unknown as Prisma.InputJsonValue } });
     await tx.enrollment.update({ where: { id: e.id }, data: { status: "COMPLETED", completedAt: new Date(), progressPct: 100 } });
     await audit({ actorId: user.id, action: "certificate.issue", entityType: "LearningCertificate", entityId: cert.id }, tx);
     await notify({ userId: user.id, type: "CERTIFICATION", title: "Certificat délivré", body: `Félicitations : certificat « ${course.title} » (${cert.code}).`, link: `/certificats/${cert.code}` }, tx);
@@ -170,9 +172,13 @@ export async function setAssessment(user: SessionUser, courseId: string, title: 
 }
 
 export async function setCourseStatus(user: SessionUser, courseId: string, status: "DRAFT" | "PUBLISHED" | "ARCHIVED", db: Db = prisma) {
-  const course = await db.course.findUniqueOrThrow({ where: { id: courseId }, include: { _count: { select: { modules: true } } } });
+  const course = await db.course.findUniqueOrThrow({ where: { id: courseId } });
   assertInstructor(user, course);
-  if (status === "PUBLISHED" && course._count.modules === 0) throw new DomainError("VALIDATION", "Ajoutez au moins une leçon avant publication.");
+  if (status === "PUBLISHED") {
+    // Protocole : institution délivrante validée et cosignataire Talent Bridge actif obligatoires.
+    const { blockers } = await courseCertificateState(courseId, db);
+    if (blockers.length) throw new DomainError("VALIDATION", `Mise en ligne impossible : ${blockers.join(" ")}`);
+  }
   await db.course.update({ where: { id: courseId }, data: { status } });
 }
 

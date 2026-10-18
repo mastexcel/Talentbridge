@@ -11,6 +11,10 @@ import { StatusBadge } from "@/ui/Badge";
 import { ActionButton } from "@/ui/ActionButton";
 import { FileUpload } from "@/ui/FileUpload";
 import { Alert } from "@/ui/Feedback";
+import { ButtonLink } from "@/ui/Button";
+import { prisma } from "@/infrastructure/db";
+import { expertCertificateEligibility } from "@/application/certificate.service";
+import { Award } from "lucide-react";
 
 export const metadata: Metadata = { title: "Vérification et certification" };
 
@@ -23,11 +27,26 @@ const STEPS = ["Dépôt des justificatifs", "Contrôle de complétude", "Vérifi
 
 export default async function VerificationPage() {
   const user = await requireExpertUser("/espace/verification");
-  const [requests, { score }] = await Promise.all([myVerifications(user.expertProfile.id), recomputeCompleteness(user.expertProfile.id)]);
+  const [requests, { score }, elig, cert] = await Promise.all([
+    myVerifications(user.expertProfile.id),
+    recomputeCompleteness(user.expertProfile.id),
+    expertCertificateEligibility(user.expertProfile.id),
+    prisma.expertCertificate.findFirst({ where: { expertId: user.expertProfile.id, revokedAt: null, validUntil: { gt: new Date() } }, orderBy: { issuedAt: "desc" } }),
+  ]);
   return (
     <>
       <PageHeader title="Centre de vérification" description="Chaque badge est attribué par un vérificateur après contrôle humain : jamais sur simple dépôt de document." />
       {score < MIN_COMPLETENESS_FOR_VERIFICATION && <Alert tone="warning" className="mb-6">Votre profil est complété à {score} % : {MIN_COMPLETENESS_FOR_VERIFICATION} % sont nécessaires pour soumettre une demande. <a href="/espace/profil" className="underline">Compléter mon profil</a></Alert>}
+      <Card className="mb-6"><CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <Award className="h-8 w-8 shrink-0 text-bordeaux-700" />
+          <div>
+            <p className="font-display font-bold">Certificat « Consultant vérifié »</p>
+            <p className="text-sm text-slate">{cert ? `Certificat n° ${cert.code}, valable jusqu'au ${cert.validUntil.toLocaleDateString("fr-FR")}.` : elig.eligible ? "Vos vérifications permettent d'obtenir votre certificat, signé par Talent Bridge et vérifiable par QR code." : "Disponible lorsque votre identité ET vos diplômes et références sont vérifiés."}</p>
+          </div>
+        </div>
+        {cert ? <ButtonLink href={`/certificats/${cert.code}`} variant="outline">Voir mon certificat</ButtonLink> : elig.eligible ? <ActionButton action="/api/v1/certificates/consultant-claim" variant="primary" successMessage="Certificat délivré.">Obtenir mon certificat</ActionButton> : null}
+      </CardBody></Card>
       <ol className="mb-6 flex flex-wrap gap-2 text-xs">{STEPS.map((s, i) => <li key={s} className="rounded-full border border-line bg-white px-3 py-1"><strong className="text-orange-700">{i + 1}.</strong> {s}</li>)}</ol>
       <div className="grid gap-6 lg:grid-cols-3">
         {(["IDENTITY", "DOCUMENTS", "SKILLS"] as VerificationType[]).map((type) => {

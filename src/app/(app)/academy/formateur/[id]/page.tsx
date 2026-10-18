@@ -8,6 +8,8 @@ import { ApiForm } from "@/ui/ApiForm";
 import { ActionButton } from "@/ui/ActionButton";
 import { Field, Input, Select, Textarea } from "@/ui/Field";
 import { Progress } from "@/ui/Stat";
+import { courseCertificateState, issuersForUser } from "@/application/certificate.service";
+import { CertificateProtocolCard } from "@/ui/certificates/IssuerEditor";
 
 export const metadata: Metadata = { title: "Gérer le cours" };
 
@@ -17,9 +19,13 @@ export default async function ManageCourse({ params }: { params: Promise<{ id: s
   const c = await prisma.course.findUnique({ where: { id }, include: { modules: { orderBy: { position: "asc" }, include: { lessons: { orderBy: { position: "asc" } } } }, assessments: true, enrollments: { include: { user: { select: { firstName: true, lastName: true } }, certificate: true } } } });
   if (!c || (c.instructorId !== user.id && user.platformRole !== "ADMIN")) notFound();
   const finalA = c.assessments.find((a) => a.isFinal);
+  const [{ course: withCert, blockers }, issuers] = await Promise.all([courseCertificateState(c.id), issuersForUser(user)]);
   return (
     <>
-      <PageHeader back={{ href: "/academy/formateur", label: "Espace formateur" }} title={c.title} actions={<>{c.status !== "PUBLISHED" && <ActionButton action="/api/v1/academy/course-status" body={{ courseId: c.id, status: "PUBLISHED" }} variant="primary" successMessage="Cours publié.">Publier</ActionButton>}{c.status === "PUBLISHED" && <ActionButton action="/api/v1/academy/course-status" body={{ courseId: c.id, status: "ARCHIVED" }} confirm="Archiver ce cours ?" successMessage="Cours archivé.">Archiver</ActionButton>}</>} />
+      <PageHeader back={{ href: "/academy/formateur", label: "Espace formateur" }} title={c.title} actions={<>{c.status !== "PUBLISHED" && blockers.length === 0 && <ActionButton action="/api/v1/academy/course-status" body={{ courseId: c.id, status: "PUBLISHED" }} variant="primary" successMessage="Cours publié.">Publier</ActionButton>}{c.status === "PUBLISHED" && <ActionButton action="/api/v1/academy/course-status" body={{ courseId: c.id, status: "ARCHIVED" }} confirm="Archiver ce cours ?" successMessage="Cours archivé.">Archiver</ActionButton>}</>} />
+      <div className="mb-6">
+        <CertificateProtocolCard courseId={c.id} issuer={withCert.issuer} otherIssuers={issuers.filter((i) => i.id !== withCert.issuerId)} tbSignatory={withCert.tbSignatory} blockers={blockers} published={c.status === "PUBLISHED"} />
+      </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <Card><CardHeader title="Modules et leçons" /><CardBody className="space-y-3 text-sm">
           {c.modules.map((m) => <div key={m.id}><p className="font-semibold">{m.title}</p><ul className="ml-4 list-disc text-slate">{m.lessons.map((l) => <li key={l.id}>{l.title} ({l.kind})</li>)}</ul></div>)}

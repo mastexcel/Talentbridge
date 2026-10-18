@@ -23,14 +23,14 @@ export default async function PublicLayout({ children }: { children: React.React
       <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
         <div className="relative mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
           <Logo className="h-14 w-auto sm:h-[72px]" />
-          <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigation principale">
+          <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Navigation principale">
             {links.map((l) => (
               <Link key={l.href} href={l.href} className="rounded-lg px-3 py-2 text-sm font-medium text-ink/80 hover:bg-mist hover:text-bordeaux-700">
                 {l.label}
               </Link>
             ))}
           </nav>
-          <div className="hidden items-center gap-2 lg:flex">
+          <div className="hidden items-center gap-2 xl:flex">
             <LocaleSwitch locale={locale} />
             {user ? (
               <ButtonLink href={homePathFor(user)} variant="secondary">{t("nav.myspace")}</ButtonLink>

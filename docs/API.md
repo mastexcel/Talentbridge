@@ -45,6 +45,8 @@ Toutes les routes répondent en JSON. Implémentation : `src/app/api/v1/**/route
 | `/academy/[action]` | POST | `enroll`, `lesson-complete`, `attempt`, `certificate`, `course-create`, `lesson-add`, `assessment`, `course-status` | Apprenant / formateur |
 | `/community/[action]` | POST | `post`, `comment`, `react`, `follow`, `group`, `report`, `mentorship-request`, `mentorship-respond` | Connecté |
 | `/crm/[action]` | POST | `opportunity`, `move`, `lead`, `convert`, `contact`, `activity`, `activity-done`, `quote` | `crm.use` |
+| `/certificates/[action]` | POST | `issuer-save`, `issuer-file` (logo, cachet, signature), `issuer-submit`, `issuer-attach`, `issuer-review` (ACADEMY_MANAGE, autre personne que le déclarant), `tb-signatory-save` (SUPER_ADMIN), `course-cosigner` (ACADEMY_MANAGE), `consultant-claim`, `consultant-revoke` (EXPERTS_VERIFY) | Selon action |
+| `/certificate-pdf/[code]` | GET | Certificat en PDF (formation ou consultant) | Public |
 | `/files` · `/files/[id]` | POST / GET | Dépôt (type vérifié par signature binaire, taille limitée) ; lecture par lien signé temporaire | Propriétaire / habilités |
 | `/exports/[kind]` | GET | `factures`, `crm`, `audit`, `direction` — `?format=csv|xlsx|pdf` + filtres KPI | Permission correspondante |
 | `/contact` | POST | Formulaire de contact | Public (limité) |

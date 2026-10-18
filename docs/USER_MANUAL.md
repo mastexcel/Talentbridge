@@ -8,9 +8,10 @@
 4. **Vérification** (`/espace/verification`) — Déposez pièce d'identité, diplômes, références, puis « Soumettre ». Un vérificateur Talent Bridge contrôle chaque pièce ; les badges n'apparaissent qu'après validation.
 5. **Missions** (`/espace/missions`) — Missions recommandées (avec score expliqué) et recherche ; « Candidater » avec proposition technique, tarif et disponibilité. Suivi dans **Candidatures**, invitations reçues, entretiens.
 6. **Contrats et projets** — Contrats, puis espace projet : tâches, livrables à déposer, commentaires. Avis échangés en fin de contrat.
-7. **Formations** — Academy : suivre un cours, passer l'évaluation, obtenir un **certificat vérifiable par QR code** (`/certificats/<code>`).
-8. **Alertes** — Recevoir les nouvelles missions / appels d'offres correspondant à vos critères.
-9. **Communauté** — Publications, groupes, mentorat ; signaler un contenu inapproprié.
+7. **Certificat « Consultant vérifié »** (`/espace/verification`) — Dès que votre identité ET vos diplômes et références sont vérifiés, cliquez sur « Obtenir mon certificat » : certificat numéroté (TB-CV-AAAA-NNNNNN), signé par Talent Bridge, avec date de validité et QR code, téléchargeable en PDF. Il n'atteste que les contrôles réellement effectués.
+8. **Formations** — Academy : suivre un cours, passer l'évaluation, obtenir un **certificat vérifiable par QR code** (`/certificats/<code>`).
+9. **Alertes** — Recevoir les nouvelles missions / appels d'offres correspondant à vos critères.
+10. **Communauté** — Publications, groupes, mentorat ; signaler un contenu inapproprié.
 
 ## Organisation (cabinet, entreprise, ONG, institution, bailleur, formation)
 
@@ -24,6 +25,17 @@
 8. **CRM** (`/organisation/crm`) — Prospects, contacts, opportunités par étape, activités, devis.
 9. **Rapports** (`/organisation/rapports`) — Indicateurs de votre organisation (missions, candidatures, contrats, dépenses). Export CSV/Excel des opportunités depuis la page CRM ; factures téléchargeables une à une en PDF depuis Facturation.
 10. **Facturation** (`/facturation`) — Choisir une offre, payer (Mobile Money, carte, virement), télécharger les factures PDF. Un paiement n'est « Payé » qu'après confirmation du prestataire ou réception du virement.
+
+## Formateur / organisme de formation
+
+1. **Créer une formation** (`/academy/formateur`) : leçons, évaluation finale, seuil de réussite.
+2. **Certificat de la formation** (même page) : renseigner l'institution qui délivre la formation — nom, devise, **logo**, **cachet**, **nom et fonction du signataire**, **signature** (PNG ou JPEG) — cocher l'attestation d'autorisation, puis « Soumettre à la validation de Talent Bridge ». Une institution déjà validée peut être réutilisée pour d'autres formations.
+3. **Aperçu** : « Aperçu du certificat (spécimen) » montre le rendu exact avec vos éléments.
+4. **Mise en ligne** : possible lorsque l'institution est validée et que Talent Bridge a désigné son cosignataire ; la liste de ce qui manque est affichée tant que ce n'est pas le cas.
+
+## Affichage
+
+Toutes les interfaces s'adaptent à l'ordinateur, à la tablette (portrait et paysage) et au téléphone. Les certificats conservent leur mise en page sur tous les écrans ; sur téléphone, les informations clés sont affichées en clair au-dessus du certificat et le PDF est téléchargeable.
 
 ## Paramètres (tous)
 

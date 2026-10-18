@@ -6,7 +6,7 @@ import { decideMatch, getMatches, runMatching } from "@/application/matching.ser
 import { addProjectMember, createContractFromApplication, createProject, createTask, getProject, moveTask, reviewContract, reviewDeliverable, submitDeliverable, transitionContract } from "@/application/project.service";
 import { claimCertificate, completeLesson, enroll, submitAttempt } from "@/application/academy.service";
 import { ceoKpis } from "@/application/analytics.service";
-import { completeExpertProfile, makeAdmin, makeUser, missionInput, resetDb, skillIds } from "./helpers";
+import { certificateParties, completeExpertProfile, makeAdmin, makeUser, missionInput, resetDb, skillIds } from "./helpers";
 
 describe("marketplace et exécution", () => {
   beforeAll(resetDb);
@@ -88,7 +88,7 @@ describe("marketplace et exécution", () => {
   it("Academy : certificat délivré seulement après toutes les leçons et l'évaluation réussie", async () => {
     const trainer = await makeUser("TRAINING_PROVIDER");
     const learner = await makeUser("EXPERT");
-    const course = await prisma.course.create({ data: { slug: "cours-test", title: "Cours test", summary: "Résumé du cours test", status: "PUBLISHED", instructorId: trainer.id, passingScore: 60, modules: { create: { title: "M1", lessons: { create: [{ title: "L1" }, { title: "L2" }] } } }, assessments: { create: { title: "Final", questions: [{ id: "q1", prompt: "?", options: ["a", "b"], answer: 1 }, { id: "q2", prompt: "?", options: ["a", "b"], answer: 0 }] } } }, include: { modules: { include: { lessons: true } }, assessments: true } });
+    const course = await prisma.course.create({ data: { slug: "cours-test", title: "Cours test", summary: "Résumé du cours test", status: "PUBLISHED", instructorId: trainer.id, ...(await certificateParties(trainer.id)), passingScore: 60, modules: { create: { title: "M1", lessons: { create: [{ title: "L1" }, { title: "L2" }] } } }, assessments: { create: { title: "Final", questions: [{ id: "q1", prompt: "?", options: ["a", "b"], answer: 1 }, { id: "q2", prompt: "?", options: ["a", "b"], answer: 0 }] } } }, include: { modules: { include: { lessons: true } }, assessments: true } });
     await enroll(learner, course.id, null);
     await expect(claimCertificate(learner, course.id)).rejects.toThrow(/Leçons/);
     for (const l of course.modules[0].lessons) await completeLesson(learner, l.id);
@@ -99,5 +99,7 @@ describe("marketplace et exécution", () => {
     const cert = await claimCertificate(learner, course.id);
     expect(cert.code).toMatch(/^TB-[A-Z0-9]{4}-[A-Z0-9]{4}$/);
     expect((await claimCertificate(learner, course.id)).id).toBe(cert.id);
+    // Copie figée de l'institution et des signataires
+    expect(cert.snapshot).toMatchObject({ issuer: { name: "Institut Test", signatoryName: "Dr Test" }, tb: { fullName: "Cosignataire Test" } });
   });
 });

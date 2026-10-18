@@ -64,8 +64,8 @@ export default async function OrgMissionPage({ params, searchParams }: { params:
           ))}
         </CardBody></Card>
       )}
-      <nav className="mb-6 flex gap-1 border-b border-line" aria-label="Onglets de la mission">
-        {TABS.map(([k, l]) => <Link key={k} href={`?onglet=${k}`} aria-current={onglet === k ? "page" : undefined} className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold ${onglet === k ? "border-orange-600 text-bordeaux-700" : "border-transparent text-slate hover:text-ink"}`}>{l}</Link>)}
+      <nav className="mb-6 flex gap-1 overflow-x-auto border-b border-line" aria-label="Onglets de la mission">
+        {TABS.map(([k, l]) => <Link key={k} href={`?onglet=${k}`} aria-current={onglet === k ? "page" : undefined} className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-semibold ${onglet === k ? "border-orange-600 text-bordeaux-700" : "border-transparent text-slate hover:text-ink"}`}>{l}</Link>)}
       </nav>
 
       {onglet === "candidatures" && (!canReview ? <Alert tone="info">Votre rôle ne permet pas d'examiner les candidatures.</Alert> : apps.length === 0 ? <EmptyState title="Aucune candidature pour l'instant" description="Lancez le matching pour identifier et inviter des experts." action={<ButtonLink href="?onglet=matching">Lancer le matching</ButtonLink>} /> : (

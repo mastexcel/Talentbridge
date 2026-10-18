@@ -11,6 +11,7 @@ import { PrismaClient, type Prisma } from "@prisma/client";
 import { hashPassword } from "../src/infrastructure/auth/password";
 import * as R from "./reference-data";
 import { seedReference } from "./seed-reference";
+import { backfillDemoCertificates, ensureDemoCertificateParties } from "./seed-certificates";
 
 const prisma = new PrismaClient();
 
@@ -205,6 +206,27 @@ async function seedDemo() {
   await prisma.organization.create({ data: { name: "PME Démo en attente (fictive)", slug: "pme-demo-en-attente", type: "COMPANY", countryCode: "CI", status: "PENDING", isDemo: true, members: { create: { userId: pending.id, role: "OWNER" } } } });
   console.log("✔ Organisations fictives");
 
+  // ── Abonnements et paiements SIMULÉS (avant les missions : la publication respecte les limites de l'offre) (prestataire mock, webhooks signés) — isTest
+  const price = async (code: string, interval: "MONTH" | "YEAR" | "ONE_TIME") => (await prisma.planPrice.findFirstOrThrow({ where: { plan: { code }, interval, currency: "XOF" } })).id;
+  const subscribeAndPay = async (userId: string, orgId: string | null, code: string, interval: "MONTH" | "YEAR" | "ONE_TIME", pay: boolean) => {
+    if (orgId) await prisma.session.updateMany({ where: { userId }, data: { activeOrgId: orgId } });
+    const s = await session(userId);
+    const res = await services.billing.subscribe(s, { priceId: await price(code, interval), couponCode: null, method: "MOBILE_MONEY", payerPhone: null, forOrganization: !!orgId });
+    if (pay && "paymentId" in res && res.paymentId) await services.billing.simulateMockPayment(s, res.paymentId, "SUCCEEDED");
+  };
+  await subscribeAndPay(orgs[0].ownerId, orgs[0].id, "ORG_BUSINESS", "MONTH", true);
+  await subscribeAndPay(orgs[2].ownerId, orgs[2].id, "ORG_BUSINESS", "YEAR", true);
+  await subscribeAndPay(orgs[1].ownerId, orgs[1].id, "ORG_STANDARD", "MONTH", true);
+  await subscribeAndPay(orgs[3].ownerId, orgs[3].id, "ORG_STANDARD", "MONTH", true);
+  await subscribeAndPay(orgs[3].ownerId, orgs[3].id, "SERVICE_SOURCING", "ONE_TIME", true);
+  await subscribeAndPay(orgs[4].ownerId, orgs[4].id, "ORG_STANDARD", "MONTH", false); // facture en attente
+  await subscribeAndPay(experts[0].userId, null, "EXPERT_PREMIUM", "MONTH", true);
+  await subscribeAndPay(experts[3].userId, null, "EXPERT_PREMIUM", "YEAR", true);
+  await prisma.invoice.updateMany({ data: { isDemo: true } });
+  await prisma.subscription.updateMany({ data: { isDemo: true } });
+  if ((await prisma.coupon.count()) === 0) await prisma.coupon.create({ data: { code: "BIENVENUE10", percentOffBps: 1000, maxRedemptions: 100, validUntil: daysFromNow(180) } });
+  console.log("✔ Abonnements et paiements de TEST (aucun encaissement réel)");
+
   // ── Missions (créées et publiées via le service)
   const missionDefs = [
     { org: 2, title: "Évaluation finale d'un programme de sécurité alimentaire", domain: "suivi-evaluation", req: [["suivi-evaluation", true], ["enquetes", false], ["cadre-logique", false]], country: "SN", mode: "HYBRID", days: 45, budget: [8_000_000, 12_000_000] },
@@ -289,25 +311,6 @@ async function seedDemo() {
   await services.mission.inviteExpert(await session(orgs[1].ownerId), missions[2].id, experts[0].expertId, "Votre profil correspond à notre besoin (invitation fictive).");
   console.log("✔ Candidatures, entretiens, contrats, projet et évaluations");
 
-  // ── Abonnements et paiements SIMULÉS (prestataire mock, webhooks signés) — isTest
-  const price = async (code: string, interval: "MONTH" | "YEAR" | "ONE_TIME") => (await prisma.planPrice.findFirstOrThrow({ where: { plan: { code }, interval, currency: "XOF" } })).id;
-  const subscribeAndPay = async (userId: string, orgId: string | null, code: string, interval: "MONTH" | "YEAR" | "ONE_TIME", pay: boolean) => {
-    if (orgId) await prisma.session.updateMany({ where: { userId }, data: { activeOrgId: orgId } });
-    const s = await session(userId);
-    const res = await services.billing.subscribe(s, { priceId: await price(code, interval), couponCode: null, method: "MOBILE_MONEY", payerPhone: null, forOrganization: !!orgId });
-    if (pay && "paymentId" in res && res.paymentId) await services.billing.simulateMockPayment(s, res.paymentId, "SUCCEEDED");
-  };
-  await subscribeAndPay(orgs[0].ownerId, orgs[0].id, "ORG_BUSINESS", "MONTH", true);
-  await subscribeAndPay(orgs[2].ownerId, orgs[2].id, "ORG_BUSINESS", "YEAR", true);
-  await subscribeAndPay(orgs[1].ownerId, orgs[1].id, "ORG_STANDARD", "MONTH", true);
-  await subscribeAndPay(orgs[3].ownerId, orgs[3].id, "SERVICE_SOURCING", "ONE_TIME", true);
-  await subscribeAndPay(orgs[4].ownerId, orgs[4].id, "ORG_STANDARD", "MONTH", false); // facture en attente
-  await subscribeAndPay(experts[0].userId, null, "EXPERT_PREMIUM", "MONTH", true);
-  await subscribeAndPay(experts[3].userId, null, "EXPERT_PREMIUM", "YEAR", true);
-  await prisma.invoice.updateMany({ data: { isDemo: true } });
-  await prisma.subscription.updateMany({ data: { isDemo: true } });
-  if ((await prisma.coupon.count()) === 0) await prisma.coupon.create({ data: { code: "BIENVENUE10", percentOffBps: 1000, maxRedemptions: 100, validUntil: daysFromNow(180) } });
-  console.log("✔ Abonnements et paiements de TEST (aucun encaissement réel)");
 
   // ── Appels d'offres
   const tenderDefs = [
@@ -337,6 +340,9 @@ async function seedDemo() {
     // Le formateur de démo est un membre d'organisme de formation : création directe si le contrôle de rôle diffère.
     return prisma.course.create({ data: { slug: "fondamentaux-suivi-evaluation-demo", title: "Fondamentaux du suivi-évaluation axé sur les résultats [démo]", summary: "Cadre logique, indicateurs SMART, plan de suivi et rapportage — cours fictif.", level: "BEGINNER", durationHours: 6, instructorId: orgs[4].ownerId, providerOrgId: orgs[4].id } });
   });
+  // Protocole de certification : institution délivrante et cosignataire (fictifs) avant mise en ligne.
+  const certParties = await ensureDemoCertificateParties(prisma);
+  if (certParties) await prisma.course.update({ where: { id: course.id }, data: { issuerId: certParties.issuerId, tbSignatoryId: certParties.tbSignatoryId } });
   const lessons = [
     ["Module 1 — Concepts", "Résultats, effets et impacts", "La chaîne des résultats relie intrants, activités, produits, effets et impact."],
     ["Module 1 — Concepts", "Le cadre logique", "Le cadre logique organise objectifs, indicateurs, sources de vérification et hypothèses."],
@@ -351,7 +357,7 @@ async function seedDemo() {
   ]);
   await services.academy.setCourseStatus(trainer, course.id, "PUBLISHED");
   await prisma.course.update({ where: { id: course.id }, data: { isDemo: true } });
-  const paid = await prisma.course.create({ data: { slug: "passation-marches-bailleurs-demo", title: "Passation des marchés selon les procédures des bailleurs [démo]", summary: "Méthodes, seuils et revue préalable — cours fictif payant.", level: "INTERMEDIATE", durationHours: 12, priceMinor: 45000, currency: "XOF", status: "PUBLISHED", instructorId: orgs[4].ownerId, providerOrgId: orgs[4].id, isDemo: true, modules: { create: { title: "Module 1", lessons: { create: { title: "Introduction", content: "Contenu fictif." } } } } } });
+  const paid = await prisma.course.create({ data: { slug: "passation-marches-bailleurs-demo", title: "Passation des marchés selon les procédures des bailleurs [démo]", summary: "Méthodes, seuils et revue préalable — cours fictif payant.", level: "INTERMEDIATE", durationHours: 12, priceMinor: 45000, currency: "XOF", status: "PUBLISHED", instructorId: orgs[4].ownerId, providerOrgId: orgs[4].id, issuerId: certParties?.issuerId, tbSignatoryId: certParties?.tbSignatoryId, isDemo: true, modules: { create: { title: "Module 1", lessons: { create: { title: "Introduction", content: "Contenu fictif." } } } } } });
   void paid;
   // L'expert démo suit le cours gratuit jusqu'au certificat (conditions réellement vérifiées)
   const learner = await session(experts[0].userId);
@@ -417,7 +423,10 @@ async function seedDemo() {
 async function main() {
   await seedReference(prisma);
   const demo = process.env.DEMO_SEED === "true" || process.env.NODE_ENV !== "production";
-  if (demo) await seedDemo();
+  if (demo) {
+    await seedDemo();
+    await backfillDemoCertificates(prisma);
+  }
   else console.log("ℹ Production : aucune donnée de démonstration chargée.");
 }
 

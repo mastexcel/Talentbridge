@@ -64,7 +64,7 @@ docs/                   documentation
 | 6 | Matching explicable + équipes | `organisation/missions/[id]` | matching.service, domain/matching | Opérationnel (déterministe) |
 | 7 | Équipes projet | `projets/*` (Kanban, chronologie, livrables) | project.service | Opérationnel |
 | 8 | Appels d'offres / AMI | `/appels-offres`, `organisation/appels-offres/*` | tender.service | Opérationnel (assistant = extraction déterministe, brouillons signalés) |
-| 9 | Academy + certificats QR | `/academy`, `academy/formateur`, `/certificats/[code]` | academy.service | Opérationnel (sessions live sans visio intégrée) |
+| 9 | Academy + certificats QR | `/academy`, `academy/formateur`, `/certificats/[code]`, `admin/certificats` | academy.service, certificate.service, certificate-pdf | Opérationnel : protocole de certification (institution délivrante validée + cosignataire Talent Bridge obligatoires avant mise en ligne), certificats de formation et « Consultant vérifié » à l'image des modèles, PDF (sessions live sans visio intégrée) |
 | 10 | Communauté, mentorat, modération | `communaute/*`, `admin/moderation` | community.service | Opérationnel |
 | 11 | CRM | `organisation/crm/*` | crm.service | Opérationnel |
 | 12 | Abonnements / monétisation | `/tarifs`, `facturation`, `admin/offres` | billing.service | Opérationnel (paiement réel à brancher) |
@@ -99,7 +99,7 @@ docs/                   documentation
 
 ### 4.2 Permissions plateforme (administrateurs Talent Bridge)
 
-`SUPER_ADMIN` (toutes), `USERS_MANAGE`, `EXPERTS_VERIFY`, `ORGS_VALIDATE`, `MARKETPLACE_MODERATE`, `FINANCE_MANAGE`, `CONFIG_MANAGE`, `CONTENT_MANAGE`, `COMMUNITY_MODERATE`, `CRM_MANAGE`, `ANALYTICS_VIEW`, `AUDIT_VIEW`. Un administrateur suspendu perd toutes ses permissions. Un vérificateur ne peut pas valider sa propre demande (`canApproveVerification`).
+`SUPER_ADMIN` (toutes), `USERS_MANAGE`, `EXPERTS_VERIFY`, `ORGS_VALIDATE`, `MARKETPLACE_MODERATE`, `FINANCE_MANAGE`, `CONFIG_MANAGE`, `CONTENT_MANAGE`, `COMMUNITY_MODERATE`, `CRM_MANAGE`, `ANALYTICS_VIEW`, `AUDIT_VIEW`, `ACADEMY_MANAGE` (institutions délivrantes, cosignataires des formations). Un administrateur suspendu perd toutes ses permissions. Un vérificateur ne peut pas valider sa propre demande (`canApproveVerification`).
 
 ### 4.3 Experts
 

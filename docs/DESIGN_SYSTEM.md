@@ -6,7 +6,7 @@ Tokens définis dans `src/app/globals.css` (Tailwind CSS 4, bloc `@theme`) ; com
 
 - **Logos officiels utilisés tels que fournis (fichiers non modifiés)** : `public/brand/logo-talent-bridge.png` (fond blanc) et `logo-talent-bridge-bordeaux.png` (cartouche bordeaux, fonds sombres). Composant : `<Logo variant="light|dark" />`. Le logo vertical fourni (`docs/brand-sources/logo-vertical-fourni.png`) contient un damier « transparent » incrusté dans l'image : il n'est pas affiché tant qu'une version PNG réellement transparente n'est pas fournie. Les favicons restent des recadrages du pictogramme (un favicon doit être carré).
 - **Visuels officiels** : `public/visuels/*.png`, affichés sans modification par `<Visual>` (`src/ui/Visual.tsx`, catalogue `src/ui/visuals.ts`). Seules des zones sont recouvertes par du HTML positionné en coordonnées de l'image : boutons peints → vrais liens ; chiffres peints → chiffres réels (`publicFigures()`) ; barres de recherche → vrais formulaires ; pastilles et cartes → zones cliquables. Sous 768 px, chiffres et actions sont repris lisiblement sous le visuel. Pour ajouter un visuel : copier le fichier dans `public/visuels`, mesurer les zones (x, y, largeur, hauteur en pixels de l'image) et les déclarer dans `visuals.ts`.
-- **Modèles de certificats** (`modele-*.png`) : affichés sur `/certificats` avec la mention « Exemple fictif » ; noms, numéros et QR codes peints ne sont pas vérifiables.
+- **Certificats** : composants `AcademyCertificate` et `ConsultantCertificate` (`src/ui/certificates`) reproduisant les modèles fournis (gabarit 1536 × 1024 mis à l'échelle, polices Cinzel et Playfair Display), version PDF équivalente (`certificate-pdf.ts`). Les modèles d'origine (`modele-*.png`) restent affichés sur `/certificats` comme « Exemple fictif ».
 - Fonds `public/backgrounds/*.webp` (issus de la planche de fonds d'écran).
 - **Typographies** : Plus Jakarta Sans (titres, `font-display`), Inter (texte, `font-sans`), auto-hébergées via `next/font`.
 
@@ -50,6 +50,10 @@ Rayons `rounded-xl` (14 px, champs, boutons) et `rounded-2xl` (20 px, cartes) ; 
 | `Shell` | Mise en page connectée : barre latérale repliable, tiroir mobile (`role="dialog"`), sélecteur d'organisation |
 | `FileUpload`, `SkillsEditor`, `TeamBuilder`, `TaskMove`, `StageSelect`, `QuizForm`… | Composants métier |
 | `Toast`, `MobileMenu`, `LocaleSwitch` | Divers |
+
+## Affichage multi-écrans
+
+Quatre formats sont couverts et testés : téléphone (390 × 844), tablette portrait (768 × 1024), tablette paysage (1024 × 768) et ordinateur (1440 × 900). Règles : navigation publique complète à partir de 1280 px (menu compact en dessous), barre latérale des espaces connectés à partir de 1024 px (tiroir en dessous), éléments de grille autorisés à rétrécir (`:where(.grid) > * { min-width: 0 }`), tableaux et onglets à défilement horizontal interne, étiquettes autorisées à passer à la ligne. Le test `tests/e2e/multi-ecrans.spec.ts` ouvre chaque page de chaque rôle aux quatre formats et échoue en cas de débordement horizontal ou d'erreur.
 
 ## Accessibilité et responsive
 

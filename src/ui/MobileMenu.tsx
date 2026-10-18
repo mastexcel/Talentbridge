@@ -6,7 +6,7 @@ import { Menu, X } from "lucide-react";
 export function MobileMenu({ links, cta }: { links: { href: string; label: string }[]; cta: { href: string; label: string }[] }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="lg:hidden">
+    <div className="xl:hidden">
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={open ? "Fermer le menu" : "Ouvrir le menu"} className="rounded-lg p-2 text-ink hover:bg-mist">
         {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
       </button>

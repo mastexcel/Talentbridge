@@ -18,7 +18,8 @@ export type AdminPermission =
   | "COMMUNITY_MODERATE"
   | "CRM_MANAGE"
   | "ANALYTICS_VIEW"
-  | "AUDIT_VIEW";
+  | "AUDIT_VIEW"
+  | "ACADEMY_MANAGE";
 
 export type OrgPermission =
   | "org.view"
@@ -73,6 +74,7 @@ export const ADMIN_PERMISSION_LABELS: Record<AdminPermission, string> = {
   CRM_MANAGE: "CRM Talent Bridge",
   ANALYTICS_VIEW: "Tableau de bord direction",
   AUDIT_VIEW: "Journal d'audit",
+  ACADEMY_MANAGE: "Academy et certificats",
 };
 
 export function orgRoleCan(role: OrgRole | null | undefined, permission: OrgPermission): boolean {

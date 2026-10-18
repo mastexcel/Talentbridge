@@ -134,6 +134,7 @@ enum AdminPermission {
   CRM_MANAGE
   ANALYTICS_VIEW
   AUDIT_VIEW
+  ACADEMY_MANAGE
 }
 
 model User {
@@ -307,29 +308,30 @@ model Organization {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  members         OrganizationMember[]
-  invitations     Invitation[]
-  documents       OrganizationDocument[]
-  sessions        Session[]
-  missions        Mission[]
-  shortlists      Shortlist[]
-  contracts       Contract[]
-  projects        Project[]
-  tenders         Tender[]               @relation("TenderPublisher")
-  bids            TenderBid[]
-  consortiumRoles ConsortiumMember[]
-  courses         Course[]
-  leads           Lead[]
-  crmContacts     CrmContact[]
-  opportunities   Opportunity[]
-  crmActivities   CrmActivity[]
-  quotes          Quote[]
-  subscriptions   Subscription[]
-  invoices        Invoice[]
-  conversations   Conversation[]
-  files           StoredFile[]
-  reviews         Review[]
-  auditLogs       AuditLog[]
+  members            OrganizationMember[]
+  invitations        Invitation[]
+  documents          OrganizationDocument[]
+  sessions           Session[]
+  missions           Mission[]
+  shortlists         Shortlist[]
+  contracts          Contract[]
+  projects           Project[]
+  tenders            Tender[]               @relation("TenderPublisher")
+  bids               TenderBid[]
+  consortiumRoles    ConsortiumMember[]
+  courses            Course[]
+  certificateIssuers CertificateIssuer[]
+  leads              Lead[]
+  crmContacts        CrmContact[]
+  opportunities      Opportunity[]
+  crmActivities      CrmActivity[]
+  quotes             Quote[]
+  subscriptions      Subscription[]
+  invoices           Invoice[]
+  conversations      Conversation[]
+  files              StoredFile[]
+  reviews            Review[]
+  auditLogs          AuditLog[]
 
   @@index([type, status])
   @@index([countryCode])
@@ -476,6 +478,7 @@ model ExpertProfile {
   availabilitySlots AvailabilitySlot[]
   verifications     VerificationRequest[]
   badges            ExpertBadge[]
+  certificates      ExpertCertificate[]
   applications      Application[]
   invitations       MissionInvitation[]
   matchScores       MatchScore[]
@@ -488,6 +491,7 @@ model ExpertProfile {
   @@index([countryCode])
   @@index([availability])
   @@index([visibility, completeness])
+  @@index([headline(ops: raw("gin_trgm_ops"))], map: "expert_profiles_headline_trgm", type: Gin)
   @@map("expert_profiles")
 }
 
@@ -836,6 +840,7 @@ model Mission {
   @@index([organizationId, status])
   @@index([status, publishedAt])
   @@index([countryCode])
+  @@index([title(ops: raw("gin_trgm_ops"))], map: "missions_title_trgm", type: Gin)
   @@map("missions")
 }
 
@@ -1281,6 +1286,7 @@ model Tender {
 
   @@index([status, deadline])
   @@index([countryCode])
+  @@index([title(ops: raw("gin_trgm_ops"))], map: "tenders_title_trgm", type: Gin)
   @@map("tenders")
 }
 
@@ -1406,24 +1412,30 @@ enum CourseStatus {
 }
 
 model Course {
-  id            String         @id @default(cuid())
-  slug          String         @unique
+  id            String             @id @default(cuid())
+  slug          String             @unique
   title         String
   summary       String
   description   String?
-  level         String         @default("INTERMEDIATE")
-  durationHours Int            @default(1)
-  priceMinor    Int            @default(0)
-  currency      String         @default("XOF") @db.Char(3)
-  status        CourseStatus   @default(DRAFT)
-  passingScore  Int            @default(70) // % minimum à l'évaluation finale
+  level         String             @default("INTERMEDIATE")
+  durationHours Int                @default(1)
+  priceMinor    Int                @default(0)
+  currency      String             @default("XOF") @db.Char(3)
+  status        CourseStatus       @default(DRAFT)
+  passingScore  Int                @default(70) // % minimum à l'évaluation finale
   instructorId  String
   providerOrgId String?
-  isDemo        Boolean        @default(false)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  instructor    User           @relation("Instructor", fields: [instructorId], references: [id], onDelete: Restrict)
-  providerOrg   Organization?  @relation(fields: [providerOrgId], references: [id], onDelete: SetNull)
+  /// Protocole de certification : institution délivrante (validée) et cosignataire Talent Bridge,
+  /// obligatoires avant la mise en ligne.
+  issuerId      String?
+  tbSignatoryId String?
+  isDemo        Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  instructor    User               @relation("Instructor", fields: [instructorId], references: [id], onDelete: Restrict)
+  providerOrg   Organization?      @relation(fields: [providerOrgId], references: [id], onDelete: SetNull)
+  issuer        CertificateIssuer? @relation(fields: [issuerId], references: [id], onDelete: Restrict)
+  tbSignatory   TbSignatory?       @relation(fields: [tbSignatoryId], references: [id], onDelete: Restrict)
   modules       CourseModule[]
   enrollments   Enrollment[]
   assessments   Assessment[]
@@ -1542,9 +1554,91 @@ model LearningCertificate {
   issuedAt     DateTime   @default(now())
   revokedAt    DateTime?
   revokeReason String?
+  /// Copie figée, au moment de la délivrance, de l'institution, des signataires et des visuels
+  /// (logo, cachet, signatures) : un certificat délivré ne change jamais après coup.
+  snapshot     Json?
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
 
   @@map("learning_certificates")
+}
+
+enum IssuerStatus {
+  DRAFT
+  SUBMITTED
+  VALIDATED
+  REJECTED
+}
+
+/// Institution qui délivre une formation (université, institut, organisme…) : logo, cachet,
+/// signataire et signature, renseignés par le formateur puis validés par Talent Bridge.
+model CertificateIssuer {
+  id                    String        @id @default(cuid())
+  organizationId        String?
+  createdById           String
+  name                  String
+  tagline               String?
+  logoFileId            String?
+  sealFileId            String?
+  signatoryName         String?
+  signatoryTitle        String?
+  signatureFileId       String?
+  /// Le déclarant atteste être autorisé par l'institution à utiliser ses logo, cachet et signature.
+  authorizationAttested Boolean       @default(false)
+  attestedAt            DateTime?
+  status                IssuerStatus  @default(DRAFT)
+  reviewedById          String?
+  reviewedAt            DateTime?
+  reviewNote            String?
+  isDemo                Boolean       @default(false)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  organization          Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  courses               Course[]
+
+  @@index([status])
+  @@map("certificate_issuers")
+}
+
+/// Personne de Talent Bridge habilitée à cosigner les certificats (nom, fonction, signature).
+model TbSignatory {
+  id              String   @id @default(cuid())
+  fullName        String
+  title           String
+  signatureFileId String
+  sealFileId      String?
+  isActive        Boolean  @default(true)
+  /// Signataire des certificats « Consultant vérifié »
+  forVerification Boolean  @default(false)
+  createdById     String
+  isDemo          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  courses         Course[]
+
+  @@map("tb_signatories")
+}
+
+/// Certificat « Consultant vérifié » : délivré à partir des vérifications humaines (badges actifs).
+model ExpertCertificate {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  expertId        String
+  holderName      String
+  headline        String
+  photoFileId     String?
+  domains         String[]
+  checks          String[]
+  yearsExperience Int?
+  issuedAt        DateTime      @default(now())
+  validUntil      DateTime
+  revokedAt       DateTime?
+  revokeReason    String?
+  snapshot        Json
+  isDemo          Boolean       @default(false)
+  expert          ExpertProfile @relation(fields: [expertId], references: [id], onDelete: Restrict)
+
+  @@index([expertId])
+  @@map("expert_certificates")
 }
 
 model LiveSession {

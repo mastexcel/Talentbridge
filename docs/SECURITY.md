@@ -14,6 +14,7 @@
 | Validation | Zod sur toutes les entrées ; messages d'erreur en français sans fuite technique | `schemas.ts` |
 | Fichiers | Type vérifié par **signature binaire** (PDF, PNG, JPEG, WebP, DOCX/XLSX), 10 Mo max, noms aléatoires, hors du dossier public ; lecture par **lien signé de 10 minutes** et contrôle d'accès | `domain/files.ts`, `file.service.ts` |
 | En-têtes HTTP | CSP stricte, HSTS (production), X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy | `next.config.ts` |
+| Certificats | Logo, cachet et signatures : PNG/JPEG uniquement, fichiers privés exposés par liens signés d'1 h sur les certificats ; attestation d'autorisation horodatée ; validation par une personne différente du déclarant ; cosignataires gérés par super-administrateur ; copie figée à la délivrance ; tout est journalisé | `certificate.service.ts` |
 | Paiements | Webhooks signés HMAC + horodatage, idempotence, contrôle du montant ; aucune donnée de carte | `docs/PAYMENTS.md` |
 | Traçabilité | Journal d'audit des actions sensibles (connexion, rôles, validations, finances, configuration, contenus) ; consultable `AUDIT_VIEW`, exportable | `audit.service.ts` |
 | Secrets | Uniquement par variables d'environnement validées au démarrage ; `.env` ignoré par git ; `.env.example` sans valeur | `infrastructure/env.ts` |

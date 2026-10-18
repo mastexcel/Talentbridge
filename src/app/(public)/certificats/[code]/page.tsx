@@ -1,47 +1,77 @@
 import type { Metadata } from "next";
-import QRCode from "qrcode";
-import { BadgeCheck, XCircle } from "lucide-react";
-import { verifyCertificate } from "@/application/academy.service";
-import { env } from "@/infrastructure/env";
-import { Logo } from "@/ui/Logo";
+import { BadgeCheck, Download, XCircle } from "lucide-react";
+import { findCertificate } from "@/application/certificate.service";
+import { academyProps, consultantProps, qrFor } from "@/lib/certificate-view";
+import { AcademyCertificate, ConsultantCertificate } from "@/ui/certificates/CertificateViews";
+import { DemoBadge } from "@/ui/Badge";
 
-export const metadata: Metadata = { title: "Certificat Talent Bridge Academy" };
+export const metadata: Metadata = { title: "Vérification de certificat" };
 export const dynamic = "force-dynamic";
 
-/** Page publique de vérification : authenticité, titulaire, formation, date et statut (révoqué ou non). */
+const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+/** Page publique de vérification : statut, informations clés, certificat et téléchargement PDF. */
 export default async function CertificatePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const cert = await verifyCertificate(code);
+  const cert = await findCertificate(decodeURIComponent(code));
   if (!cert) {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
         <XCircle className="mx-auto h-14 w-14 text-red-600" />
         <h1 className="mt-4 text-2xl font-extrabold">Certificat introuvable</h1>
-        <p className="mt-2 text-slate">Aucun certificat ne correspond à l'identifiant « {code} ». Vérifiez la saisie.</p>
+        <p className="mt-2 text-slate">Aucun certificat ne correspond à l&apos;identifiant « {code} ». Vérifiez la saisie.</p>
       </div>
     );
   }
-  const url = `${env().APP_URL}/certificats/${cert.code}`;
-  const qr = await QRCode.toDataURL(url, { margin: 1, width: 220, color: { dark: "#7B1F2B" } });
-  const valid = !cert.revokedAt;
+  const qr = await qrFor(cert.code);
+  const now = new Date();
+  const expired = cert.type === "consultant" && cert.validUntil < now;
+  const valid = !cert.revokedAt && !expired;
+  const issuerName = cert.type === "academy" ? (cert.snapshot?.issuer ? `Talent Bridge Academy et ${cert.snapshot.issuer.name}` : "Talent Bridge Academy") : "Talent Bridge";
+  const facts: [string, string][] =
+    cert.type === "academy"
+      ? [["Titulaire", cert.holderName], ["Formation", cert.courseTitle], ["Délivré par", issuerName], ["Date d'obtention", fmt(cert.issuedAt)], ["Score à l'évaluation finale", `${cert.scorePct} %`], ["Numéro", cert.code]]
+      : [["Titulaire", cert.holderName], ["Profil", cert.headline], ["Délivré par", issuerName], ["Date de certification", fmt(cert.issuedAt)], ["Valable jusqu'au", fmt(cert.validUntil)], ["Numéro", cert.code]];
+  const renderable = cert.type === "consultant" || !!cert.snapshot?.issuer;
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <div className={`mb-4 flex items-center gap-2 rounded-xl p-3 text-sm font-semibold ${valid ? "bg-olive-100 text-olive-800" : "bg-red-100 text-red-800"}`}>
-        {valid ? <BadgeCheck className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
-        {valid ? "Certificat authentique et valide, délivré par Talent Bridge Academy." : `Certificat révoqué le ${cert.revokedAt!.toLocaleDateString("fr-FR")}${cert.revokeReason ? ` : ${cert.revokeReason}` : ""}.`}
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className={`flex items-start gap-2 rounded-xl p-3 text-sm font-semibold ${valid ? "bg-olive-100 text-olive-800" : "bg-red-100 text-red-800"}`} role="status">
+        {valid ? <BadgeCheck className="h-5 w-5 shrink-0" /> : <XCircle className="h-5 w-5 shrink-0" />}
+        <span>
+          {valid && `Certificat authentique et valide, délivré par ${issuerName}.`}
+          {cert.revokedAt && `Certificat révoqué le ${fmt(cert.revokedAt)}${cert.revokeReason ? ` : ${cert.revokeReason}` : ""}.`}
+          {!cert.revokedAt && expired && `Certificat expiré depuis le ${fmt((cert as { validUntil: Date }).validUntil)}.`}
+        </span>
+        <DemoBadge show={cert.isDemo} />
       </div>
-      <article className="rounded-3xl border-4 border-double border-bordeaux-200 bg-white p-8 text-center shadow-lift sm:p-12">
-        <Logo href={null} className="mx-auto h-20 w-auto" />
-        <p className="mt-8 text-sm uppercase tracking-[0.3em] text-slate">Certificat de réussite</p>
-        <p className="mt-6 text-slate">décerné à</p>
-        <h1 className="mt-1 text-3xl font-extrabold text-bordeaux-700">{cert.holderName}</h1>
-        <p className="mt-6 text-slate">pour avoir suivi avec succès la formation</p>
-        <p className="mt-1 font-display text-xl font-bold">{cert.courseTitle}</p>
-        <p className="mt-4 text-sm text-slate">Score à l'évaluation finale : {cert.scorePct} % · Délivré le {cert.issuedAt.toLocaleDateString("fr-FR")}</p>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qr} alt={`QR code de vérification du certificat ${cert.code}`} className="mx-auto mt-8 h-32 w-32" />
-        <p className="mt-2 font-mono text-sm font-semibold">{cert.code}</p>
-      </article>
+
+      <div className="mt-6 flex flex-col gap-6">
+        <div className="order-2 min-w-0">
+          {renderable ? (
+            cert.type === "academy" ? <AcademyCertificate {...academyProps(cert, cert.snapshot!, qr)} /> : <ConsultantCertificate {...consultantProps(cert, qr)} />
+          ) : (
+            <p className="rounded-2xl border border-line bg-white p-6 text-sm text-slate">Certificat délivré avant la mise en place du protocole de signature : les informations ci-contre font foi.</p>
+          )}
+          <p className="mt-2 text-center text-xs text-slate md:hidden">Faites pivoter votre appareil ou téléchargez le PDF pour une lecture confortable.</p>
+        </div>
+        <aside className="order-1 rounded-2xl border border-line bg-white p-5 shadow-card md:order-3">
+          <h1 className="font-display text-lg font-extrabold text-ink">{cert.type === "academy" ? "Certificat de formation" : "Certification « Consultant vérifié »"}</h1>
+          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            {facts.map(([k, v]) => (
+              <div key={k}>
+                <dt className="text-xs uppercase tracking-wide text-slate">{k}</dt>
+                <dd className={k === "Numéro" ? "font-mono font-semibold" : "font-semibold text-ink"}>{v}</dd>
+              </div>
+            ))}
+          </dl>
+          {renderable && (
+            <a href={`/api/v1/certificate-pdf/${cert.code}`} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 font-semibold text-white hover:bg-orange-700 sm:w-auto">
+              <Download className="h-4 w-4" /> Télécharger le PDF
+            </a>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

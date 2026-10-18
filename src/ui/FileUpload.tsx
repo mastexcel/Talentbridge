@@ -42,7 +42,7 @@ export function FileUpload({ purpose, accept, label = "Déposer un fichier", att
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="relative flex flex-wrap items-center gap-2">
       <input ref={input} type="file" className="sr-only" accept={accept} onChange={onChange} aria-label={label} />
       <Button type="button" variant="outline" size="sm" onClick={() => input.current?.click()} disabled={busy}>
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} {label}

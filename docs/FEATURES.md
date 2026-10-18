@@ -6,9 +6,9 @@
 
 | Suite | Contenu | Résultat |
 |---|---|---|
-| Unitaires (`tests/unit`, 43) | Matching (pondérations, critères, équipe, extraction de compétences), workflows, permissions, argent/TVA, fichiers, signatures webhook, S3 SigV4, sécurité | ✅ 43/43 |
-| Intégration (`tests/integration`, 30) | Étanchéité multi-tenant, authentification, vérification et badges, facturation/paiements/webhooks/renouvellements, marketplace (quota d'offre, candidatures, contrats), API (idempotence, CSRF, session, simulateur refusé en production), chiffres publics | ✅ 30/30 |
-| E2E Playwright (`tests/e2e`, 16) | 14 parcours critiques (inscription consultant, profil, vérification, inscription organisation + validation, publication, matching, candidature, sélection et contrat, projet, appel d'offres, Academy + certificat, souscription en mode test, facture PDF, CEO Dashboard) + 2 tests mobiles | ✅ 16/16 (une exécution précédente a vu un échec isolé du test « tiroir mobile », non reproduit sur les 3 exécutions suivantes) |
+| Unitaires (`tests/unit`, 47) | Matching (pondérations, critères, équipe, extraction de compétences), workflows, permissions, argent/TVA, fichiers, signatures webhook, S3 SigV4, sécurité | ✅ 47/47 |
+| Intégration (`tests/integration`, 32) | Étanchéité multi-tenant, authentification, vérification et badges, facturation/paiements/webhooks/renouvellements, marketplace (quota d'offre, candidatures, contrats), API (idempotence, CSRF, session, simulateur refusé en production), chiffres publics, protocole de certification (institution, validation par un tiers, cosignataire, certificat consultant, PDF) | ✅ 32/32 |
+| E2E Playwright (`tests/e2e`, 36) | 14 parcours critiques, 2 tests mobiles, et 20 tests multi-écrans (5 rôles × téléphone, tablette portrait, tablette paysage, ordinateur, ≈ 70 pages chacun) | ✅ 36/36 sur la dernière exécution complète (le test du menu mobile, sensible à la charge, a été rendu robuste) |
 | Qualité | ESLint, TypeScript strict, build de production, `npm audit --omit=dev` | ✅ 0 erreur, 0 vulnérabilité |
 
 ## Terminé
@@ -21,7 +21,9 @@
 - **Matching** déterministe explicable (pondérations 30/20/15/15/10/10 configurables, normalisées) + constitution d'équipe couvrant les exigences + recommandations de missions pour les experts.
 - **Projets** : membres, Kanban, chronologie, livrables, validation, commentaires.
 - **Appels d'offres** : veille, alertes, dossiers de réponse, extraction assistée des exigences (marquée brouillon), matrice de conformité, experts clés, consortium.
-- **Academy** : cours, modules, leçons, évaluations, progression, certificats à code + QR vérifiables publiquement, espace formateur.
+- **Academy** : cours, modules, leçons, évaluations, progression, espace formateur ; **protocole de certification** (institution délivrante avec logo, cachet, signataire et signature, validée par Talent Bridge ; cosignataire Talent Bridge) obligatoire avant mise en ligne ; certificats à l'image des modèles fournis, vérifiables par code et QR, téléchargeables en PDF, figés à la délivrance.
+- **Certificat « Consultant vérifié »** : délivré sur la base des vérifications humaines (identité + diplômes et références), numérotation continue, validité, PDF.
+- **Affichage multi-écrans** : toutes les interfaces testées sur téléphone, tablette portrait, tablette paysage et ordinateur.
 - **Communauté** : publications, commentaires, réactions, abonnements, groupes, événements, mentorat, signalements et modération.
 - **CRM** : prospects, conversion, contacts, opportunités par étape (probabilités), activités, devis, export.
 - **Monétisation** : offres, prix multi-devises, limites, coupons, souscription, changement d'offre, résiliation, renouvellement, relances, remboursements, commissions.
@@ -45,6 +47,7 @@
 | Limiteur de débit | En mémoire (par instance) ; Redis prévu mais non branché | Implémenter l'adaptateur Redis avant un déploiement multi-instances |
 | Filtres CEO Dashboard | Période, pays, type d'organisation, devise ; **pas encore** par service / offre / statut | Ajouter ces dimensions aux requêtes `ceoKpis` |
 | Purge automatique (documents de vérification expirés, contacts anciens) | Non automatisée | Ajouter aux tâches planifiées une fois les durées validées |
+| Signature électronique qualifiée des certificats (horodatage, certificat numérique) | Signatures visuelles (images) + vérification en ligne par code/QR | Intégrer un prestataire de signature électronique si une valeur juridique renforcée est requise |
 | Signature électronique des contrats | Statuts « envoyé / signé » déclaratifs | Intégration d'un service de signature |
 | Image Docker | Non construite dans l'environnement de livraison (limite Docker Hub) | Valider au premier build CI |
 | Déploiement | **Aucun** (conformément aux consignes) | Après validation explicite et liste de contrôle DEPLOYMENT.md |

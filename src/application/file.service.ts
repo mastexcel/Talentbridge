@@ -12,7 +12,7 @@ import { hasAdminPermission, orgRoleCan, type OrgRole } from "@/domain/permissio
 import type { SessionUser } from "./auth.service";
 import { audit } from "./audit.service";
 
-export const FILE_PURPOSES = ["CV", "PHOTO", "VERIFICATION", "QUALIFICATION", "MISSION", "TENDER", "PROPOSAL", "DELIVERABLE", "COURSE", "ORG_DOCUMENT", "PORTFOLIO"] as const;
+export const FILE_PURPOSES = ["CV", "PHOTO", "VERIFICATION", "QUALIFICATION", "MISSION", "TENDER", "PROPOSAL", "DELIVERABLE", "COURSE", "ORG_DOCUMENT", "PORTFOLIO", "CERT_LOGO", "CERT_SEAL", "CERT_SIGNATURE"] as const;
 export type FilePurpose = (typeof FILE_PURPOSES)[number];
 
 const ALLOWED_BY_PURPOSE: Record<FilePurpose, string[]> = {
@@ -27,6 +27,10 @@ const ALLOWED_BY_PURPOSE: Record<FilePurpose, string[]> = {
   COURSE: ["pdf", "docx", "png", "jpg", "jpeg"],
   ORG_DOCUMENT: ["pdf", "png", "jpg", "jpeg"],
   PORTFOLIO: ["pdf", "png", "jpg", "jpeg", "webp"],
+  // Éléments graphiques des certificats : PNG ou JPEG uniquement (intégrables au PDF).
+  CERT_LOGO: ["png", "jpg", "jpeg"],
+  CERT_SEAL: ["png", "jpg", "jpeg"],
+  CERT_SIGNATURE: ["png", "jpg", "jpeg"],
 };
 
 export async function uploadFile(
@@ -77,6 +81,7 @@ export async function canReadFile(user: SessionUser | null, fileId: string, db: 
   if (hasAdminPermission(user, "EXPERTS_VERIFY") && ["VERIFICATION", "QUALIFICATION", "CV"].includes(file.purpose)) return true;
   if (hasAdminPermission(user, "ORGS_VALIDATE") && file.purpose === "ORG_DOCUMENT") return true;
   if (hasAdminPermission(user, "MARKETPLACE_MODERATE") && ["MISSION", "PROPOSAL", "TENDER"].includes(file.purpose)) return true;
+  if (hasAdminPermission(user, "ACADEMY_MANAGE") && file.purpose.startsWith("CERT_")) return true;
 
   const reviewerOrgs = user.memberships.filter((m) => orgRoleCan(m.role as OrgRole, "applications.review")).map((m) => m.organizationId);
   if (reviewerOrgs.length) {

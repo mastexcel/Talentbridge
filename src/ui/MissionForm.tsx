@@ -85,9 +85,9 @@ export function MissionForm({ countries, domains, skills, initial, missionId }: 
         <p className="mt-1 text-xs text-slate">L'analyse repère uniquement des compétences existantes du référentiel ; elle n'invente rien. Validez chaque ligne.</p>
         <div className="mt-4 space-y-2">
           {reqs.fields.map((f, i) => (
-            <div key={f.id} className="grid grid-cols-[1fr_130px_130px_40px] items-center gap-2 text-sm">
-              <span className="font-medium">{skillName(f.skillId)}</span>
-              <Select aria-label="Niveau minimal" {...register(`requirements.${i}.minLevel`)}>{[1, 2, 3, 4, 5].map((l) => <option key={l} value={l}>Niveau {l}+</option>)}</Select>
+            <div key={f.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line p-2 text-sm sm:border-0 sm:p-0">
+              <span className="min-w-0 basis-full font-medium sm:flex-1 sm:basis-auto">{skillName(f.skillId)}</span>
+              <Select aria-label="Niveau minimal" className="w-32" {...register(`requirements.${i}.minLevel`)}>{[1, 2, 3, 4, 5].map((l) => <option key={l} value={l}>Niveau {l}+</option>)}</Select>
               <Checkbox {...register(`requirements.${i}.mandatory`)} label="Obligatoire" />
               <button type="button" onClick={() => reqs.remove(i)} className="rounded-lg p-2 text-slate hover:text-red-700" aria-label="Retirer"><Trash2 className="h-4 w-4" /></button>
             </div>

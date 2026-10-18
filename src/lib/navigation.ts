@@ -75,6 +75,7 @@ export function adminNavigation(user: SessionUser): NavSection[] {
         { href: "/admin/missions", label: "Marketplace", icon: "Briefcase", perm: "MARKETPLACE_MODERATE" },
         { href: "/admin/appels-offres", label: "Appels d'offres", icon: "FileSearch", perm: "MARKETPLACE_MODERATE" },
         { href: "/admin/moderation", label: "Modération", icon: "Flag", perm: "COMMUNITY_MODERATE" },
+        { href: "/admin/certificats", label: "Academy & certificats", icon: "Award", perm: "ACADEMY_MANAGE" },
       ]),
     },
     {

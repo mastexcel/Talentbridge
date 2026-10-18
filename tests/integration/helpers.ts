@@ -89,3 +89,10 @@ export const missionInput = (requirements: { skillId: string; mandatory: boolean
   visibility: "PUBLIC" as const,
   requirements,
 });
+
+/** Institution validée et cosignataire actif (fichiers fictifs : seuls les identifiants comptent ici). */
+export async function certificateParties(createdById: string) {
+  const issuer = await prisma.certificateIssuer.create({ data: { name: "Institut Test", createdById, logoFileId: "f-logo", sealFileId: "f-seal", signatureFileId: "f-sig", signatoryName: "Dr Test", signatoryTitle: "Directeur", authorizationAttested: true, status: "VALIDATED" } });
+  const tb = await prisma.tbSignatory.create({ data: { fullName: "Cosignataire Test", title: "DG", signatureFileId: "f-tb", createdById, forVerification: true } });
+  return { issuerId: issuer.id, tbSignatoryId: tb.id };
+}
