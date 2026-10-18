@@ -42,9 +42,17 @@ function Frame({ children, className, specimen, revoked, label }: { children: Re
   );
 }
 
-/** Logo en filigrane, derrière le contenu du certificat. */
-function Watermark({ left, top, width }: { left: number; top: number; width: number }) {
-  return <img src="/brand/tb-wordmark.png" alt="" aria-hidden className="pointer-events-none absolute select-none" style={{ left: u(left), top: u(top), width: u(width), opacity: 0.07 }} />;
+/**
+ * Fond du certificat : pont du logo en grand et carte d'Afrique en pointillés avec ses
+ * connexions internationales, en filigrane derrière le contenu.
+ */
+function Watermark({ bridge, map }: { bridge: { left: number; top: number; width: number }; map: { left: number; top: number; width: number } }) {
+  return (
+    <>
+      <img src="/brand/afrique-connexions.svg" alt="" aria-hidden className="pointer-events-none absolute select-none" style={{ left: u(map.left), top: u(map.top), width: u(map.width), opacity: 0.16 }} />
+      <img src="/brand/tb-pictogramme.png" alt="" aria-hidden className="pointer-events-none absolute select-none" style={{ left: u(bridge.left), top: u(bridge.top), width: u(bridge.width), opacity: 0.07 }} />
+    </>
+  );
 }
 
 function Signature({ s, compact }: { s: SignatoryView; compact?: boolean }) {
@@ -108,7 +116,7 @@ export function AcademyCertificate(p: AcademyCertificateProps) {
       {/* Cadre bordeaux + filet doré */}
       <div className="absolute" style={{ inset: u(22), border: `${u(10)} solid #7B1F2B` }} />
       <div className="absolute" style={{ inset: u(42), border: `${u(2)} solid ${GOLD}` }} />
-      <Watermark left={218} top={330} width={1100} />
+      <Watermark bridge={{ left: 368, top: 300, width: 800 }} map={{ left: 960, top: 190, width: 500 }} />
       <div className="absolute flex flex-col items-center" style={{ inset: u(48), paddingTop: u(10) }}>
         {/* En-tête : Talent Bridge Academy | institution partenaire */}
         <div className="flex w-full items-center justify-center" style={{ gap: u(40), height: u(170) }}>
@@ -196,7 +204,7 @@ export function ConsultantCertificate(p: ConsultantCertificateProps) {
   return (
     <Frame revoked={p.revoked} specimen={p.specimen} label={`Certification « Consultant vérifié » de ${p.holderName}, numéro ${p.code}`}>
       <div className="absolute" style={{ inset: u(22), border: `${u(3)} solid ${GOLD}` }} />
-      <Watermark left={540} top={360} width={920} />
+      <Watermark bridge={{ left: 600, top: 330, width: 760 }} map={{ left: 1050, top: 210, width: 430 }} />
       {/* Panneau bordeaux */}
       <div className="absolute flex flex-col items-center text-white" style={{ left: u(34), top: u(72), width: u(412), bottom: u(36), borderRadius: u(28), background: "linear-gradient(180deg,#8E1B2C 0%,#5A0E1A 100%)", border: `${u(3)} solid ${GOLD}`, padding: `0 ${u(26)} ${u(24)}` }}>
         <div className="overflow-hidden bg-white/10" style={{ width: u(366), height: u(380), marginTop: u(-40), borderRadius: u(26), border: `${u(4)} solid ${GOLD}` }}>
@@ -275,7 +283,7 @@ export function ConsultantCertificate(p: ConsultantCertificateProps) {
           </div>
           <Qr dataUrl={p.qrDataUrl} caption="Vérifier ce certificat" />
         </div>
-        <p className="absolute uppercase" style={{ bottom: u(-26), fontSize: u(11), letterSpacing: u(4), color: NAVY }}>Talent Bridge &nbsp;|&nbsp; Connecter les experts &nbsp;|&nbsp; Transformer les compétences en résultats</p>
+        <p className="absolute uppercase" style={{ bottom: u(-10), fontSize: u(11), letterSpacing: u(4), color: NAVY }}>Talent Bridge &nbsp;|&nbsp; Connecter les experts &nbsp;|&nbsp; Transformer les compétences en résultats</p>
       </div>
     </Frame>
   );

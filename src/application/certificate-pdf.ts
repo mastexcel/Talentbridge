@@ -76,11 +76,11 @@ function left(c: Ctx, text: string, x: number, top: number, size: number, font: 
 const hline = (c: Ctx, x1: number, x2: number, top: number, thick = 2, color = GOLD) => c.page.drawLine({ start: { x: x1 * S, y: H - top * S }, end: { x: x2 * S, y: H - top * S }, thickness: thick * S, color });
 const vline = (c: Ctx, x: number, top: number, bottom: number) => c.page.drawLine({ start: { x: x * S, y: H - top * S }, end: { x: x * S, y: H - bottom * S }, thickness: 2 * S, color: GOLD });
 
-/** Logo en filigrane (gabarit : position et largeur), dessiné avant le contenu. */
-function watermark(c: Ctx, img: PDFImage, left: number, top: number, width: number) {
+/** Fond : pont du logo et carte d'Afrique en pointillés (gabarit : position et largeur), dessinés avant le contenu. */
+function watermark(c: Ctx, img: PDFImage, left: number, top: number, width: number, opacity: number) {
   const w = width * S;
   const h = (img.height / img.width) * w;
-  c.page.drawImage(img, { x: left * S, y: H - top * S - h, width: w, height: h, opacity: 0.07 });
+  c.page.drawImage(img, { x: left * S, y: H - top * S - h, width: w, height: h, opacity });
 }
 
 /** Image contenue dans la boîte (gabarit), centrée, proportions conservées. */
@@ -113,8 +113,11 @@ async function base(title: string) {
     sans: await doc.embedFont(StandardFonts.Helvetica),
     sansBold: await doc.embedFont(StandardFonts.HelveticaBold),
   };
-  const logo = await doc.embedPng(await readFile(path.join(process.cwd(), "public/brand/tb-wordmark.png")));
-  return { doc, c: { page, fonts } as Ctx, logo };
+  const brand = (f: string) => readFile(path.join(process.cwd(), "public/brand", f));
+  const logo = await doc.embedPng(await brand("tb-wordmark.png"));
+  const bridge = await doc.embedPng(await brand("tb-pictogramme.png"));
+  const map = await doc.embedPng(await brand("afrique-connexions.png"));
+  return { doc, c: { page, fonts } as Ctx, logo, bridge, map };
 }
 
 async function qrImage(doc: PDFDocument, code: string) {
@@ -141,7 +144,7 @@ function infoRow(c: Ctx, cx: number, top: number, items: [string, string][], col
 
 export async function academyCertificatePdf(cert: Extract<PublicCertificate, { type: "academy" }>, snap: CertificateSnapshot): Promise<Uint8Array> {
   const i = snap.issuer!;
-  const { doc, c, logo } = await base(`Certificat ${cert.code}`);
+  const { doc, c, logo, bridge, map } = await base(`Certificat ${cert.code}`);
   const [issuerLogo, seal, sigIssuer, sigTb, qr] = await Promise.all([
     embed(doc, await certificateImage(i.logoFileId)),
     embed(doc, await certificateImage(i.sealFileId)),
@@ -153,7 +156,8 @@ export async function academyCertificatePdf(cert: Extract<PublicCertificate, { t
   p.drawRectangle({ x: 0, y: 0, width: W, height: H, color: WHITE });
   p.drawRectangle({ x: 27 * S, y: 27 * S, width: W - 54 * S, height: H - 54 * S, borderColor: BORDEAUX, borderWidth: 10 * S });
   p.drawRectangle({ x: 42 * S, y: 42 * S, width: W - 84 * S, height: H - 84 * S, borderColor: GOLD, borderWidth: 2 * S });
-  watermark(c, logo, 218, 330, 1100);
+  watermark(c, map, 960, 190, 500, 0.16);
+  watermark(c, bridge, 368, 300, 800, 0.07);
   // En-tête
   fit(c, logo, 250, 66, 480, 92);
   centered(c, "ACADEMY", 490, 192, 30, c.fonts.serifBold, BORDEAUX, { spacing: 10 });
@@ -188,12 +192,13 @@ export async function academyCertificatePdf(cert: Extract<PublicCertificate, { t
 }
 
 export async function consultantCertificatePdf(cert: Extract<PublicCertificate, { type: "consultant" }>): Promise<Uint8Array> {
-  const { doc, c, logo } = await base(`Certification ${cert.code}`);
+  const { doc, c, logo, bridge, map } = await base(`Certification ${cert.code}`);
   const [photo, sigTb, qr] = await Promise.all([embed(doc, await certificateImage(cert.photoFileId)), embed(doc, await certificateImage(cert.snapshot.tb.signatureFileId)), qrImage(doc, cert.code)]);
   const p = c.page;
   p.drawRectangle({ x: 0, y: 0, width: W, height: H, color: WHITE });
   p.drawRectangle({ x: 22 * S, y: 22 * S, width: W - 44 * S, height: H - 44 * S, borderColor: GOLD, borderWidth: 3 * S });
-  watermark(c, logo, 540, 360, 920);
+  watermark(c, map, 1050, 210, 430, 0.16);
+  watermark(c, bridge, 600, 330, 760, 0.07);
   // Panneau bordeaux
   p.drawRectangle({ x: 34 * S, y: 36 * S, width: 412 * S, height: (1024 - 72 - 36) * S, color: rgb(0x6e / 255, 0x14 / 255, 0x22 / 255), borderColor: GOLD, borderWidth: 3 * S });
   if (photo) fit(c, photo, 57, 60, 366, 360);
