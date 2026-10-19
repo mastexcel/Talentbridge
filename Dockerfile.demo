@@ -1,0 +1,25 @@
+# Talent Bridge — image de DÉMONSTRATION hébergée (Render, Railway, Fly.io…).
+# Différences avec l'image de production (Dockerfile) :
+#  - DEMO_SEED=true et ALLOW_MOCK_PAYMENTS=true sont fixés dans l'image (compilés dans le site :
+#    bandeau « Site de démonstration », pages non indexées) ;
+#  - au démarrage : migrations, référentiels et données fictives (idempotents), puis serveur ;
+#  - tâches planifiées exécutées toutes les 10 minutes dans le conteneur ;
+#  - TB_HOSTED_DEMO=true : comptes administrateurs fictifs créés (jamais dans l'image de production),
+#    protégés par un DEMO_PASSWORD propre à l'instance (obligatoire).
+# Ne jamais utiliser cette image pour une instance de production ni y saisir de données réelles.
+
+FROM node:22-bookworm-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+RUN npm ci
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production DEMO_SEED=true TB_HOSTED_DEMO=true ALLOW_MOCK_PAYMENTS=true STORAGE_LOCAL_DIR=/app/storage
+RUN npm run build \
+  && cp -r .next/static .next/standalone/.next/static \
+  && cp -r public .next/standalone/public \
+  && mkdir -p /app/storage
+ENV PORT=3000 HOSTNAME=0.0.0.0
+EXPOSE 3000
+CMD ["sh", "scripts/demo-start.sh"]

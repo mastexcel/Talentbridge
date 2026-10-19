@@ -29,7 +29,7 @@ La CI (`.github/workflows/ci.yml`) exécute lint, typecheck, migrations, tests u
 ## Liste de contrôle avant production
 
 - [ ] `NODE_ENV=production`, `APP_URL` en HTTPS, secrets générés aléatoirement et stockés dans un coffre (jamais dans le dépôt).
-- [ ] `DEMO_SEED=false`, `ALLOW_MOCK_PAYMENTS` absent ; aucune donnée `isDemo` en base.
+- [ ] `DEMO_SEED=false`, `ALLOW_MOCK_PAYMENTS` et `TB_HOSTED_DEMO` absents, image `Dockerfile` (jamais `Dockerfile.demo`) ; aucune donnée `isDemo` en base.
 - [ ] Premier super-administrateur créé avec `ADMIN_EMAIL=… ADMIN_PASSWORD=… npm run admin:create` (cible `tools`), puis permissions fines attribuées aux autres administrateurs dans `/admin/utilisateurs` ; aucun compte `@demo.talentbridge.africa`.
 - [ ] Prestataire de paiement réel intégré, testé en sandbox, URL de webhook déclarée (`docs/PAYMENTS.md`).
 - [ ] Fournisseur email configuré (SPF, DKIM, DMARC sur le domaine d'envoi).

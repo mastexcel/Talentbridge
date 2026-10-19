@@ -107,3 +107,25 @@ export async function backfillDemoCertificates(prisma: PrismaClient, log = true)
   }
   if (log) console.log("✔ Protocole de certification de démonstration (institution et cosignataire fictifs)");
 }
+
+/**
+ * Hébergement sans disque persistant : les images de démonstration (logo, cachet, signatures)
+ * sont régénérées à l'identique si leur fichier a disparu du stockage. Ne touche qu'aux fichiers de démo.
+ */
+export async function restoreDemoFiles(prisma: PrismaClient, log = true) {
+  const sources: Record<string, () => string> = {
+    "logo-institut-demo.png": () => LOGO_SVG,
+    "cachet-institut-demo.png": () => SEAL_SVG,
+    "signature-institut-demo.png": () => signatureSvg("A. D."),
+    "signature-tb-demo.png": () => signatureSvg("TB"),
+  };
+  const files = await prisma.storedFile.findMany({ where: { storageKey: { contains: "/demo/" }, filename: { in: Object.keys(sources) } } });
+  let restored = 0;
+  for (const f of files) {
+    const present = await storage().get(f.storageKey).then(() => true, () => false);
+    if (present) continue;
+    await storage().put(f.storageKey, await svgPng(sources[f.filename]()), "image/png");
+    restored++;
+  }
+  if (log && restored) console.log(`✔ ${restored} image(s) de démonstration restaurée(s)`);
+}

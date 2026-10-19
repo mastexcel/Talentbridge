@@ -11,7 +11,7 @@ import { PrismaClient, type Prisma } from "@prisma/client";
 import { hashPassword } from "../src/infrastructure/auth/password";
 import * as R from "./reference-data";
 import { seedReference } from "./seed-reference";
-import { backfillDemoCertificates, ensureDemoCertificateParties } from "./seed-certificates";
+import { backfillDemoCertificates, ensureDemoCertificateParties, restoreDemoFiles } from "./seed-certificates";
 import { ensureDemoAcademyCatalogue } from "./seed-academy";
 
 const prisma = new PrismaClient();
@@ -112,10 +112,12 @@ async function seedDemo() {
   const domains = Object.fromEntries((await prisma.expertiseDomain.findMany()).map((d) => [d.slug, d.id]));
   const session = async (userId: string) => (await services.auth.getUserBySessionToken(await services.auth.createSession(userId)))!;
 
-  // ── Comptes plateforme (jamais en production)
+  // ── Comptes plateforme (jamais en production). Seule exception : l'instance de démonstration
+  // hébergée, marquée explicitement par TB_HOSTED_DEMO (fixé dans Dockerfile.demo uniquement),
+  // dont le mot de passe est propre à l'instance (vérifié par scripts/demo-start.sh).
   let admin = null;
   let verifier = null;
-  if (!isProd) {
+  if (!isProd || process.env.TB_HOSTED_DEMO === "true") {
     admin = await upsertUser("admin@demo.talentbridge.africa", { firstName: "Admin", lastName: "Démo", password, platformRole: "ADMIN", adminPermissions: ["SUPER_ADMIN"] });
     await upsertUser("ceo@demo.talentbridge.africa", { firstName: "Direction", lastName: "Générale", password, platformRole: "ADMIN", adminPermissions: ["ANALYTICS_VIEW", "FINANCE_MANAGE", "AUDIT_VIEW"] });
     verifier = await upsertUser("verificateur@demo.talentbridge.africa", { firstName: "Vérificateur", lastName: "Démo", password, platformRole: "ADMIN", adminPermissions: ["EXPERTS_VERIFY", "ORGS_VALIDATE"] });
@@ -427,6 +429,7 @@ async function main() {
     await seedDemo();
     await backfillDemoCertificates(prisma);
     await ensureDemoAcademyCatalogue(prisma);
+    await restoreDemoFiles(prisma);
   }
   else console.log("ℹ Production : aucune donnée de démonstration chargée.");
 }

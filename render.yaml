@@ -1,0 +1,45 @@
+# Blueprint Render — DÉMONSTRATION hébergée de Talent Bridge (données fictives uniquement).
+# Mode d'emploi : docs/DEMO_HEBERGEE.md. Ce fichier ne crée PAS d'instance de production.
+databases:
+  - name: talentbridge-demo-db
+    # Offre gratuite : base supprimée par Render au bout de 30 jours. « basic-256mb » pour la conserver.
+    plan: free
+    databaseName: talentbridge
+    user: talentbridge
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: talentbridge-demo
+    runtime: docker
+    dockerfilePath: ./Dockerfile.demo
+    # Branche contenant le code (à remplacer par main après fusion).
+    branch: ccr-4448e1f0-h5jxqr
+    # Offre gratuite : mise en veille après 15 min sans visite (premier affichage ~1 min).
+    # « starter » pour une démo toujours disponible.
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: talentbridge-demo-db
+          property: connectionString
+      # Secrets générés par Render (jamais stockés dans le dépôt).
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PAYMENT_WEBHOOK_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: FILE_SIGNING_SECRET
+        generateValue: true
+      # Mot de passe commun des comptes de démonstration : à lire dans Render › Environment.
+      - key: DEMO_PASSWORD
+        generateValue: true
+      - key: DEMO_SEED
+        value: "true"
+      - key: ALLOW_MOCK_PAYMENTS
+        value: "true"
+      - key: STORAGE_LOCAL_DIR
+        value: /app/storage
+      # APP_URL : déduite automatiquement de RENDER_EXTERNAL_URL (adresse onrender.com du service).

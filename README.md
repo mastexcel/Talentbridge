@@ -49,6 +49,7 @@ Comptes de démonstration (hors production uniquement, mot de passe = `DEMO_PASS
 | [docs/PAYMENTS.md](docs/PAYMENTS.md) | Paiements, webhooks, brancher un prestataire réel |
 | [docs/SECURITY.md](docs/SECURITY.md) | Sécurité, données personnelles, conservation |
 | [docs/INSTALL.md](docs/INSTALL.md) / [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Installation, déploiement |
+| [docs/DEMO_HEBERGEE.md](docs/DEMO_HEBERGEE.md) | Démo hébergée (Render) : lien public, données fictives |
 | [docs/ADMIN_MANUAL.md](docs/ADMIN_MANUAL.md) / [docs/USER_MANUAL.md](docs/USER_MANUAL.md) | Manuels |
 | [docs/FEATURES.md](docs/FEATURES.md) | Fonctionnalités terminées, restantes, décisions à valider |
 
