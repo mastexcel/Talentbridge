@@ -27,7 +27,7 @@ Migration initiale : `prisma/migrations/20261017100413_init/migration.sql` (gén
 | Messagerie | conversations, conversation_participants, messages |
 | Appels d'offres | tenders, tender_documents, tender_alerts, tender_bids, bid_requirements (matrice de conformité), tender_bid_experts, consortiums, consortium_members |
 | Certification | certificate_issuers (institution délivrante : logo, cachet, signataire, signature, attestation, statut de validation), tb_signatories (cosignataires Talent Bridge), expert_certificates (« Consultant vérifié », numérotation par séquence `expert_certificate_seq`) ; `learning_certificates.snapshot` et `expert_certificates.snapshot` figent les éléments au moment de la délivrance |
-| Academy | courses (+ issuerId, tbSignatoryId), course_modules, lessons, enrollments, lesson_progress, assessments, assessment_attempts, learning_certificates (code de vérification), live_sessions, mentorships |
+| Academy | courses (+ issuerId, tbSignatoryId, kind TRAINING/SEMINAR, format ONLINE/VIRTUAL_CLASS/IN_PERSON/BLENDED, domainId, audience, language), live_sessions (mode, lieu, ville, pays, capacité), enrollments (+ sessionId, attendedAt), course_modules, lessons, enrollments, lesson_progress, assessments, assessment_attempts, learning_certificates (code de vérification), live_sessions, mentorships |
 | Communauté | community_groups, posts, comments, reactions, follows, content_reports, community_events |
 | CRM | leads, crm_contacts, opportunities (étape, probabilité), crm_activities, quotes |
 | Monétisation | subscription_plans, plan_prices (multi-devises), plan_features (limites), coupons, subscriptions, invoice_sequences, invoices, invoice_lines, payments, payment_events (webhooks, idempotence), refunds, commissions |

@@ -61,7 +61,7 @@ export const ORGANIZATION_TYPE_LABELS: Record<(typeof ORGANIZATION_TYPES)[number
 
 export const signupSchema = z
   .object({
-    accountType: z.enum(["EXPERT", ...ORGANIZATION_TYPES]),
+    accountType: z.enum(["EXPERT", "LEARNER", ...ORGANIZATION_TYPES]),
     firstName: trimmed(1, 60, "Prénom requis."),
     lastName: trimmed(1, 60, "Nom requis."),
     email: z.string().trim().toLowerCase().email("Adresse email invalide."),
@@ -74,7 +74,7 @@ export const signupSchema = z
     marketingEmail: z.boolean().default(false),
     invitationToken: optionalText(200),
   })
-  .refine((v) => v.accountType === "EXPERT" || !!v.organizationName, { message: "Raison sociale requise.", path: ["organizationName"] });
+  .refine((v) => v.accountType === "EXPERT" || v.accountType === "LEARNER" || !!v.organizationName, { message: "Raison sociale requise.", path: ["organizationName"] });
 export type SignupInput = z.infer<typeof signupSchema>;
 
 export const loginSchema = z.object({
@@ -414,6 +414,22 @@ export const courseSchema = z.object({
   price: z.coerce.number().min(0),
   currency,
   passingScore: z.coerce.number().int().min(0).max(100),
+  kind: z.enum(["TRAINING", "SEMINAR"]).default("TRAINING"),
+  format: z.enum(["ONLINE", "VIRTUAL_CLASS", "IN_PERSON", "BLENDED"]).default("ONLINE"),
+  domainId: z.union([z.literal(""), z.null(), z.undefined(), z.string().max(40)]).transform((v) => v || null),
+  audience: optionalText(300),
+  language: z.enum(["fr", "en", "pt", "ar"]).default("fr"),
+});
+export const sessionSchema = z.object({
+  title: trimmed(2, 160),
+  startsAt: z.coerce.date(),
+  durationMin: z.coerce.number().int().min(15).max(60 * 24 * 10),
+  mode: z.enum(["VIRTUAL", "IN_PERSON"]),
+  joinUrl: z.union([z.literal(""), z.null(), z.undefined(), z.string().url().max(500)]).transform((v) => v || null),
+  venue: optionalText(200),
+  city: optionalText(100),
+  countryCode: z.union([z.literal(""), z.null(), z.undefined(), z.string().length(2).toUpperCase()]).transform((v) => v || null),
+  capacity: z.union([z.literal(""), z.null(), z.undefined(), z.coerce.number().int().min(1).max(100_000)]).transform((v) => (v === "" || v == null ? null : v)),
 });
 export const lessonSchema = z.object({ moduleTitle: trimmed(2, 160), title: trimmed(2, 160), kind: z.enum(["TEXT", "VIDEO", "DOCUMENT", "EXERCISE"]), content: optionalText(20000), videoUrl: z.union([z.literal(""), z.null(), z.undefined(), z.string().url()]).transform((v) => v || null) });
 

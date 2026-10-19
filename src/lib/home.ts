@@ -3,5 +3,6 @@ export function homePathFor(user: { platformRole: string; expertProfile: unknown
   if (user.platformRole === "ADMIN") return "/admin";
   if (user.memberships.length > 0 && !user.expertProfile) return "/organisation";
   if (user.expertProfile) return "/espace";
-  return "/";
+  // Apprenant (ni profil d'expert ni organisation) : ses formations.
+  return "/espace/formations";
 }

@@ -21,6 +21,8 @@ export default async function CertificatePreview({ params }: { params: Promise<{
       issuer: { name: i?.name ?? "Institution à renseigner", tagline: i?.tagline ?? null, logoFileId: i?.logoFileId ?? "", sealFileId: i?.sealFileId ?? "", signatoryName: i?.signatoryName ?? "Signataire de l'institution", signatoryTitle: i?.signatoryTitle ?? "Fonction", signatureFileId: i?.signatureFileId ?? "" },
       tb: { fullName: c.tbSignatory?.fullName ?? "Cosignataire Talent Bridge", title: c.tbSignatory?.title ?? "À désigner par Talent Bridge", signatureFileId: c.tbSignatory?.signatureFileId ?? "", sealFileId: null },
       durationHours: c.durationHours,
+      kind: c.kind,
+      format: c.format,
     },
     await qrFor("TBA-SPECIMEN"),
     true,

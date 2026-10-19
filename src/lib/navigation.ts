@@ -50,6 +50,7 @@ export function appNavigation(user: SessionUser): NavSection[] {
       ...(user.expertProfile && !m ? [{ href: "/projets", label: "Mes projets", icon: "KanbanSquare" as const }] : []),
       { href: "/messages", label: "Messages", icon: "MessageSquare" },
       { href: "/communaute", label: "Communauté", icon: "UsersRound" },
+      ...(!user.expertProfile ? [{ href: "/espace/formations", label: "Mes formations", icon: "BookOpen" as const }] : []),
       { href: "/academy", label: "Academy", icon: "GraduationCap" },
       { href: "/facturation", label: "Abonnement & factures", icon: "CreditCard" },
       { href: "/parametres", label: "Paramètres", icon: "Settings" },

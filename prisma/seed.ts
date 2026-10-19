@@ -12,6 +12,7 @@ import { hashPassword } from "../src/infrastructure/auth/password";
 import * as R from "./reference-data";
 import { seedReference } from "./seed-reference";
 import { backfillDemoCertificates, ensureDemoCertificateParties } from "./seed-certificates";
+import { ensureDemoAcademyCatalogue } from "./seed-academy";
 
 const prisma = new PrismaClient();
 
@@ -366,7 +367,6 @@ async function seedDemo() {
   const assessment = await prisma.assessment.findFirstOrThrow({ where: { courseId: course.id } });
   await services.academy.submitAttempt(learner, assessment.id, { q1: 1, q2: 0, q3: 0 });
   const cert = await services.academy.claimCertificate(learner, course.id);
-  await prisma.liveSession.create({ data: { courseId: course.id, title: "Session de questions-réponses (fictive)", startsAt: daysFromNow(12), joinUrl: null } });
   console.log(`✔ Academy (certificat vérifiable ${cert.code})`);
 
   // ── Communauté, mentorat, messagerie
@@ -426,6 +426,7 @@ async function main() {
   if (demo) {
     await seedDemo();
     await backfillDemoCertificates(prisma);
+    await ensureDemoAcademyCatalogue(prisma);
   }
   else console.log("ℹ Production : aucune donnée de démonstration chargée.");
 }

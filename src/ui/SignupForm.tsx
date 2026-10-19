@@ -21,7 +21,7 @@ export function SignupForm({ accountType, countries, invitationToken, email }: {
     defaultValues: { accountType, countryCode: "CI", marketingEmail: false, email, invitationToken: invitationToken ?? null },
   });
   const type = watch("accountType");
-  const isOrg = type !== "EXPERT";
+  const isOrg = type !== "EXPERT" && type !== "LEARNER";
 
   async function onSubmit(values: SignupInput) {
     setError(null);

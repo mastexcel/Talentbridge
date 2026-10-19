@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkFile, sanitizeFilename } from "@/domain/files";
 import { computeCompleteness } from "@/domain/profile";
-import { certificateEligibility, gradeAttempt, publicQuestions } from "@/domain/academy";
+import { certificateEligibility, certificateWording, gradeAttempt, isSessionBased, publicQuestions, seatsLeft } from "@/domain/academy";
 import { complianceRate, extractRequirements } from "@/domain/tenders";
 import { maskEmail, renderTemplate, slugify } from "@/domain/text";
 
@@ -44,6 +44,21 @@ describe("Academy", () => {
     expect(certificateEligibility({ lessonsTotal: 4, lessonsDone: 4, hasFinal: true, bestScorePct: 60, passingScore: 70 }).eligible).toBe(false);
     expect(certificateEligibility({ lessonsTotal: 4, lessonsDone: 4, hasFinal: true, bestScorePct: 70, passingScore: 70 }).eligible).toBe(true);
     expect(certificateEligibility({ lessonsTotal: 0, lessonsDone: 0, hasFinal: false, bestScorePct: null, passingScore: 70 }).eligible).toBe(false);
+    // Séminaire / sessions datées : la présence attestée est exigée, les leçons sont facultatives.
+    expect(certificateEligibility({ lessonsTotal: 0, lessonsDone: 0, hasFinal: false, bestScorePct: null, passingScore: 70, sessionBased: true, attended: false }).eligible).toBe(false);
+    expect(certificateEligibility({ lessonsTotal: 0, lessonsDone: 0, hasFinal: false, bestScorePct: null, passingScore: 70, sessionBased: true, attended: true }).eligible).toBe(true);
+    expect(certificateEligibility({ lessonsTotal: 2, lessonsDone: 2, hasFinal: true, bestScorePct: 50, passingScore: 70, sessionBased: true, attended: true }).eligible).toBe(false);
+  });
+
+  it("type, format, places et libellés du certificat", () => {
+    expect(isSessionBased({ kind: "TRAINING", format: "ONLINE" })).toBe(false);
+    expect(isSessionBased({ kind: "TRAINING", format: "IN_PERSON" })).toBe(true);
+    expect(isSessionBased({ kind: "SEMINAR", format: "ONLINE" })).toBe(true);
+    expect(seatsLeft(null, 50)).toBeNull();
+    expect(seatsLeft(20, 25)).toBe(0);
+    expect(seatsLeft(20, 5)).toBe(15);
+    expect(certificateWording().subtitle).toBe("De formation en ligne");
+    expect(certificateWording("SEMINAR", "IN_PERSON").body).toBe("a participé au séminaire");
   });
 });
 

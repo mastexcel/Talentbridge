@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, GraduationCap, Landmark, Briefcase, HeartHandshake, UserRound } from "lucide-react";
+import { BookOpen, Building2, GraduationCap, Landmark, Briefcase, HeartHandshake, UserRound } from "lucide-react";
 
 export const metadata: Metadata = { title: "Inscription" };
 
 const CHOICES = [
   { href: "/inscription/consultant", icon: UserRound, title: "Consultant indépendant", text: "Créez votre profil d'expert, faites-le vérifier, candidatez." },
+  { href: "/inscription/apprenant", icon: BookOpen, title: "Apprenant", text: "Suivez les formations et séminaires de l'Academy et obtenez des certificats." },
   { href: "/inscription/organisation?type=CONSULTING_FIRM", icon: Briefcase, title: "Cabinet de conseil", text: "Mobilisez des experts et répondez aux appels d'offres." },
   { href: "/inscription/organisation?type=COMPANY", icon: Building2, title: "Entreprise / PME", text: "Publiez vos besoins et recrutez des experts." },
   { href: "/inscription/organisation?type=NGO", icon: HeartHandshake, title: "ONG / organisation internationale", text: "Mobilisez des experts pour vos programmes." },

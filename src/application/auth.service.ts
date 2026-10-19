@@ -84,7 +84,8 @@ export async function signup(input: SignupInput, meta: { ip?: string | null } = 
     if (input.accountType === "EXPERT") {
       const slug = await uniqueSlug(`${input.firstName}-${input.lastName}`, async (s) => !!(await tx.expertProfile.findUnique({ where: { slug: s }, select: { id: true } })));
       await tx.expertProfile.create({ data: { userId: user.id, slug, countryCode: input.countryCode, languages: ["fr"], visibility: "PRIVATE" } });
-    } else {
+    } else if (input.accountType !== "LEARNER") {
+      // Apprenant : compte personnel sans profil d'expert ni organisation (Academy uniquement).
       const slug = await uniqueSlug(input.organizationName!, async (s) => !!(await tx.organization.findUnique({ where: { slug: s }, select: { id: true } })));
       const org = await tx.organization.create({
         data: {
@@ -117,7 +118,11 @@ export async function signup(input: SignupInput, meta: { ip?: string | null } = 
     `Bonjour ${input.firstName},\n\nBienvenue sur Talent Bridge. Confirmez votre adresse en ouvrant ce lien (valable 48 h) :\n${env().APP_URL}/verifier-email?jeton=${result.verifyToken}\n\nL'équipe Talent Bridge`,
     db,
   );
-  await notify({ userId: result.user.id, type: "REGISTRATION", title: "Bienvenue sur Talent Bridge", body: input.accountType === "EXPERT" ? "Complétez votre profil pour être visible des organisations." : "Complétez la fiche de votre organisation pour la soumettre à validation.", link: input.accountType === "EXPERT" ? "/espace/profil" : "/organisation/parametres", channels: [] }, db);
+  const welcome = {
+    EXPERT: { body: "Complétez votre profil pour être visible des organisations.", link: "/espace/profil" },
+    LEARNER: { body: "Choisissez une formation ou un séminaire dans le catalogue de la Talent Bridge Academy.", link: "/academy" },
+  }[input.accountType as "EXPERT" | "LEARNER"] ?? { body: "Complétez la fiche de votre organisation pour la soumettre à validation.", link: "/organisation/parametres" };
+  await notify({ userId: result.user.id, type: "REGISTRATION", title: "Bienvenue sur Talent Bridge", ...welcome, channels: [] }, db);
   return { userId: result.user.id, organizationId: result.organizationId, verifyToken: result.verifyToken };
 }
 

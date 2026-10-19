@@ -22,7 +22,7 @@ export const POST = route<{ action: string }>({}, async ({ req, user, params, ip
       const input = await parseBody(req, signupSchema);
       const r = await signup(input, meta);
       const token = await createSession(r.userId, meta);
-      const res = NextResponse.json({ ok: true, redirectUrl: input.accountType === "EXPERT" ? "/espace/profil?bienvenue=1" : "/organisation/parametres?bienvenue=1" });
+      const res = NextResponse.json({ ok: true, redirectUrl: input.accountType === "EXPERT" ? "/espace/profil?bienvenue=1" : input.accountType === "LEARNER" ? "/academy?bienvenue=1" : "/organisation/parametres?bienvenue=1" });
       setSessionCookie(res, token);
       return res;
     }

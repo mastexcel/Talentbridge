@@ -43,9 +43,12 @@ export function issuerMissing(i: IssuerFields): string[] {
 }
 
 /** Ce qui empêche encore la mise en ligne d'une formation (liste vide = publiable). */
-export function coursePublishBlockers(c: { lessons: number; issuer: (IssuerFields & { status: IssuerStatus }) | null; tbSignatory: SignatoryFields | null }): string[] {
+export function coursePublishBlockers(c: { lessons: number; issuer: (IssuerFields & { status: IssuerStatus }) | null; tbSignatory: SignatoryFields | null; sessionBased?: boolean; upcomingSessions?: number }): string[] {
   const blockers: string[] = [];
-  if (c.lessons === 0) blockers.push("Ajoutez au moins une leçon.");
+  // Formats en sessions datées (séminaires, classe virtuelle, présentiel) : une session à venir ; les leçons sont facultatives.
+  if (c.sessionBased) {
+    if (!c.upcomingSessions) blockers.push("Programmez au moins une session à venir (date, lieu ou lien, nombre de places).");
+  } else if (c.lessons === 0) blockers.push("Ajoutez au moins une leçon.");
   if (!c.issuer) blockers.push("Renseignez l'institution qui délivre la formation (logo, cachet, signataire et signature).");
   else {
     const missing = issuerMissing(c.issuer);
@@ -102,4 +105,7 @@ export interface CertificateSnapshot {
   issuer?: { name: string; tagline: string | null; logoFileId: string; sealFileId: string; signatoryName: string; signatoryTitle: string; signatureFileId: string };
   tb: { fullName: string; title: string; signatureFileId: string; sealFileId: string | null };
   durationHours?: number;
+  /** Type et format du cours (libellés du certificat) ; absents des certificats antérieurs. */
+  kind?: string;
+  format?: string;
 }

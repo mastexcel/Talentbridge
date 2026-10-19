@@ -26,12 +26,20 @@
 9. **Rapports** (`/organisation/rapports`) — Indicateurs de votre organisation (missions, candidatures, contrats, dépenses). Export CSV/Excel des opportunités depuis la page CRM ; factures téléchargeables une à une en PDF depuis Facturation.
 10. **Facturation** (`/facturation`) — Choisir une offre, payer (Mobile Money, carte, virement), télécharger les factures PDF. Un paiement n'est « Payé » qu'après confirmation du prestataire ou réception du virement.
 
+## Apprenant (toute personne souhaitant se former)
+
+1. **Catalogue** (`/academy`) — Formations et séminaires, filtrables par type, format, thématique, niveau et prix ; agenda des prochaines sessions avec lieu et places restantes.
+2. **Compte** — « Créer un compte apprenant » (`/inscription/apprenant`) : gratuit, sans profil d'expert ni organisation (un profil d'expert peut être créé plus tard).
+3. **Inscription** — Formation en ligne : accès immédiat. Classe virtuelle, présentiel, hybride ou séminaire : choisir une session ; la place est réservée à l'inscription (confirmée au paiement pour une formation payante). Le lien de connexion d'une session en ligne n'est visible que des inscrits.
+4. **Suivi** (`/espace/formations`) — Inscriptions, session choisie, progression, présence, certificats.
+5. **Certificat** — En ligne : leçons terminées et évaluation réussie. Sessions : présence attestée par le formateur (plus leçons et évaluation s'il y en a). Séminaires : certificat de participation.
+
 ## Formateur / organisme de formation
 
-1. **Créer une formation** (`/academy/formateur`) : leçons, évaluation finale, seuil de réussite.
+1. **Créer une formation ou un séminaire** (`/academy/formateur`) : type, format, thématique, public visé, langue ; leçons, évaluation finale, seuil de réussite. Pour les formats en sessions : **programmer les sessions** (date et heure GMT, durée, mode, lien ou lieu, places) et, une fois la session commencée, **attester la présence** de chaque inscrit.
 2. **Certificat de la formation** (même page) : renseigner l'institution qui délivre la formation — nom, devise, **logo**, **cachet**, **nom et fonction du signataire**, **signature** (PNG ou JPEG) — cocher l'attestation d'autorisation, puis « Soumettre à la validation de Talent Bridge ». Une institution déjà validée peut être réutilisée pour d'autres formations.
 3. **Aperçu** : « Aperçu du certificat (spécimen) » montre le rendu exact avec vos éléments.
-4. **Mise en ligne** : possible lorsque l'institution est validée et que Talent Bridge a désigné son cosignataire ; la liste de ce qui manque est affichée tant que ce n'est pas le cas.
+4. **Mise en ligne** : possible lorsque l'institution est validée, que Talent Bridge a désigné son cosignataire et, pour les formats en sessions, qu'au moins une session à venir est programmée ; la liste de ce qui manque est affichée tant que ce n'est pas le cas.
 
 ## Affichage
 

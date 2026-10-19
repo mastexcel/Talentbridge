@@ -26,15 +26,16 @@ datasource db {
 // ═════════════════════════════════════════════════════════════
 
 model Country {
-  code         String    @id @db.Char(2) // ISO 3166-1 alpha-2
+  code         String        @id @db.Char(2) // ISO 3166-1 alpha-2
   nameFr       String
   nameEn       String
   region       String // Afrique de l'Ouest, Centrale…
-  currencyCode String    @db.Char(3)
+  currencyCode String        @db.Char(3)
   phonePrefix  String?
-  isActive     Boolean   @default(true)
-  currency     Currency  @relation(fields: [currencyCode], references: [code])
+  isActive     Boolean       @default(true)
+  currency     Currency      @relation(fields: [currencyCode], references: [code])
   taxRates     TaxRate[]
+  liveSessions LiveSession[]
 
   @@map("countries")
 }
@@ -72,6 +73,7 @@ model ExpertiseDomain {
   isActive  Boolean        @default(true)
   skills    Skill[]
   experts   ExpertDomain[]
+  courses   Course[]
   missions  Mission[]
   tenders   Tender[]
 
@@ -1411,6 +1413,25 @@ enum CourseStatus {
   ARCHIVED
 }
 
+/// Formation (parcours avec leçons) ou séminaire (événement daté, présence attestée par le formateur).
+enum CourseKind {
+  TRAINING
+  SEMINAR
+}
+
+/// ONLINE : à son rythme ; les autres formats se déroulent en sessions datées.
+enum CourseFormat {
+  ONLINE
+  VIRTUAL_CLASS
+  IN_PERSON
+  BLENDED
+}
+
+enum SessionMode {
+  VIRTUAL
+  IN_PERSON
+}
+
 model Course {
   id            String             @id @default(cuid())
   slug          String             @unique
@@ -1422,6 +1443,12 @@ model Course {
   priceMinor    Int                @default(0)
   currency      String             @default("XOF") @db.Char(3)
   status        CourseStatus       @default(DRAFT)
+  kind          CourseKind         @default(TRAINING)
+  format        CourseFormat       @default(ONLINE)
+  domainId      String?
+  /// Public visé (texte libre affiché au catalogue)
+  audience      String?
+  language      String             @default("fr")
   passingScore  Int                @default(70) // % minimum à l'évaluation finale
   instructorId  String
   providerOrgId String?
@@ -1434,6 +1461,7 @@ model Course {
   updatedAt     DateTime           @updatedAt
   instructor    User               @relation("Instructor", fields: [instructorId], references: [id], onDelete: Restrict)
   providerOrg   Organization?      @relation(fields: [providerOrgId], references: [id], onDelete: SetNull)
+  domain        ExpertiseDomain?   @relation(fields: [domainId], references: [id], onDelete: SetNull)
   issuer        CertificateIssuer? @relation(fields: [issuerId], references: [id], onDelete: Restrict)
   tbSignatory   TbSignatory?       @relation(fields: [tbSignatoryId], references: [id], onDelete: Restrict)
   modules       CourseModule[]
@@ -1441,7 +1469,8 @@ model Course {
   assessments   Assessment[]
   liveSessions  LiveSession[]
 
-  @@index([status])
+  @@index([status, kind])
+  @@index([domainId])
   @@map("courses")
 }
 
@@ -1494,13 +1523,19 @@ model Enrollment {
   status      EnrollmentStatus     @default(ACTIVE)
   progressPct Int                  @default(0)
   completedAt DateTime?
+  /// Session choisie (formats en sessions datées)
+  sessionId   String?
+  /// Présence attestée par le formateur
+  attendedAt  DateTime?
   createdAt   DateTime             @default(now())
+  session     LiveSession?         @relation(fields: [sessionId], references: [id], onDelete: Restrict)
   course      Course               @relation(fields: [courseId], references: [id], onDelete: Restrict)
   user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   lessons     LessonProgress[]
   certificate LearningCertificate?
 
   @@unique([courseId, userId])
+  @@index([sessionId])
   @@map("enrollments")
 }
 
@@ -1642,13 +1677,22 @@ model ExpertCertificate {
 }
 
 model LiveSession {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   courseId    String
   title       String
   startsAt    DateTime
-  durationMin Int      @default(60)
+  durationMin Int          @default(60)
+  mode        SessionMode  @default(VIRTUAL)
+  /// Lien de connexion : communiqué aux seuls inscrits de la session.
   joinUrl     String?
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  venue       String?
+  city        String?
+  countryCode String?      @db.Char(2)
+  /// Nombre de places (null = illimité)
+  capacity    Int?
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  country     Country?     @relation(fields: [countryCode], references: [code])
+  enrollments Enrollment[]
 
   @@index([courseId, startsAt])
   @@map("live_sessions")

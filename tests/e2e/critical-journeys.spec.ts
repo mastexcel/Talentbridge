@@ -292,4 +292,30 @@ test.describe.serial("Parcours critiques Talent Bridge", () => {
     const pdf = await page.request.get("/api/v1/exports/direction?format=pdf");
     expect(pdf.headers()["content-type"]).toBe("application/pdf");
   });
+
+  test("15. Academy : un apprenant s'inscrit à un séminaire", async ({ page }) => {
+    await page.context().clearCookies();
+    await page.goto("/academy", { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: "Catalogue des formations et séminaires" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Prochains séminaires et sessions" })).toBeVisible();
+    await page.goto((await page.getByRole("link", { name: "Séminaires", exact: true }).getAttribute("href"))!, { waitUntil: "networkidle" });
+    await expect(page.getByRole("link", { name: "Séminaires", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("link", { name: /genre et inclusion/ }).first()).toBeVisible();
+    await follow(page, "Créer un compte apprenant");
+    await page.getByLabel("Prénom").fill("Awa");
+    await page.getByLabel(/^Nom/).fill(lastName);
+    await page.getByLabel("Email").fill(`e2e.apprenant.${stamp}@test.local`);
+    await page.getByLabel("Mot de passe").fill(password);
+    await page.getByLabel(/conditions générales/).check();
+    await page.getByLabel(/politique de confidentialité/).check();
+    await page.getByRole("button", { name: "Créer mon compte" }).click();
+    await page.waitForURL(/\/academy\?bienvenue=1/);
+    await page.goto("/academy/seminaire-genre-inclusion-demo", { waitUntil: "networkidle" });
+    await expect(page.getByText("Choisissez votre session")).toBeVisible();
+    await page.getByRole("button", { name: "S'inscrire gratuitement" }).click();
+    await expect(page.getByText("Inscription confirmée.").first()).toBeVisible();
+    await page.goto("/espace/formations", { waitUntil: "networkidle" });
+    await expect(page.getByRole("link", { name: /genre et inclusion/ })).toBeVisible();
+    await expect(page.getByText("Séminaire").first()).toBeVisible();
+  });
 });

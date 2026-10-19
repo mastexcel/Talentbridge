@@ -14,6 +14,9 @@ describe("protocole de certification", () => {
   it("bloque la mise en ligne tant que l'institution n'est pas validée et qu'aucun cosignataire n'est désigné", () => {
     expect(coursePublishBlockers({ lessons: 0, issuer: null, tbSignatory: null })).toHaveLength(3);
     expect(coursePublishBlockers({ lessons: 2, issuer: { ...complete, status: "SUBMITTED" }, tbSignatory: tb })).toEqual(["Institution en attente de validation par Talent Bridge."]);
+    // Séminaire / sessions datées : pas de leçon exigée, mais une session à venir
+    expect(coursePublishBlockers({ lessons: 0, issuer: { ...complete, status: "VALIDATED" }, tbSignatory: tb, sessionBased: true, upcomingSessions: 0 })).toEqual(["Programmez au moins une session à venir (date, lieu ou lien, nombre de places)."]);
+    expect(coursePublishBlockers({ lessons: 0, issuer: { ...complete, status: "VALIDATED" }, tbSignatory: tb, sessionBased: true, upcomingSessions: 1 })).toEqual([]);
     expect(coursePublishBlockers({ lessons: 2, issuer: { ...complete, status: "VALIDATED" }, tbSignatory: { ...tb, isActive: false } })[0]).toMatch(/n'est plus actif/);
     expect(coursePublishBlockers({ lessons: 2, issuer: { ...complete, status: "VALIDATED" }, tbSignatory: tb })).toEqual([]);
   });

@@ -6,6 +6,7 @@
  *  - Une formation ne peut être mise en ligne qu'avec une institution validée et un cosignataire actif.
  *  - Tout certificat délivré fige une copie de ces éléments (snapshot) : il ne change plus ensuite.
  */
+import { isSessionBased } from "@/domain/academy";
 import type { Prisma } from "@prisma/client";
 import { prisma, inTransaction, type Db } from "@/infrastructure/db";
 import { DomainError } from "@/domain/errors";
@@ -168,12 +169,14 @@ export async function assignCosigner(user: SessionUser, courseId: string, tbSign
 
 export async function courseCertificateState(courseId: string, db: Db = prisma) {
   const course = await db.course.findUniqueOrThrow({ where: { id: courseId }, include: { issuer: true, tbSignatory: true } });
-  const lessons = await db.lesson.count({ where: { module: { courseId } } });
-  return { course, blockers: coursePublishBlockers({ lessons, issuer: course.issuer, tbSignatory: course.tbSignatory }) };
+  const [lessons, upcomingSessions] = await Promise.all([db.lesson.count({ where: { module: { courseId } } }), db.liveSession.count({ where: { courseId, startsAt: { gt: new Date() } } })]);
+  return { course, blockers: coursePublishBlockers({ lessons, issuer: course.issuer, tbSignatory: course.tbSignatory, sessionBased: isSessionBased(course), upcomingSessions }) };
 }
 
 export function courseSnapshot(course: {
   durationHours: number;
+  kind?: string;
+  format?: string;
   issuer: { name: string; tagline: string | null; logoFileId: string | null; sealFileId: string | null; signatoryName: string | null; signatoryTitle: string | null; signatureFileId: string | null; status: string } | null;
   tbSignatory: { fullName: string; title: string; signatureFileId: string; sealFileId: string | null; isActive: boolean } | null;
 }): CertificateSnapshot {
@@ -187,6 +190,8 @@ export function courseSnapshot(course: {
     issuer: { name: i.name, tagline: i.tagline, logoFileId: i.logoFileId, sealFileId: i.sealFileId, signatoryName: i.signatoryName, signatoryTitle: i.signatoryTitle, signatureFileId: i.signatureFileId },
     tb: { fullName: t.fullName, title: t.title, signatureFileId: t.signatureFileId, sealFileId: t.sealFileId },
     durationHours: course.durationHours,
+    kind: course.kind,
+    format: course.format,
   };
 }
 

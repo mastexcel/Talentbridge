@@ -42,7 +42,7 @@ Toutes les routes répondent en JSON. Implémentation : `src/app/api/v1/**/route
 | `/webhooks/payments/[provider]` | POST | Notification du prestataire — **signature HMAC vérifiée**, horodatage ±5 min, idempotence par identifiant d'événement | Prestataire |
 | `/tenders/[action]` | POST | `alert-create`, `alert-delete`, `bid-start` | `tenders.manage` |
 | `/bids/[id]/[action]` | POST | `extract` (exigences depuis le texte du dossier, marquées « brouillon assisté »), `requirement-add/update/delete`, `expert`, `consortium`, `status` | `tenders.manage` |
-| `/academy/[action]` | POST | `enroll`, `lesson-complete`, `attempt`, `certificate`, `course-create`, `lesson-add`, `assessment`, `course-status` | Apprenant / formateur |
+| `/academy/[action]` | POST | `enroll` (avec `sessionId` pour les formats en sessions), `lesson-complete`, `attempt`, `certificate`, `course-create` (type, format, thématique, public visé, langue), `lesson-add`, `assessment`, `session-add`, `session-remove`, `attendance`, `course-status` | Apprenant / formateur |
 | `/community/[action]` | POST | `post`, `comment`, `react`, `follow`, `group`, `report`, `mentorship-request`, `mentorship-respond` | Connecté |
 | `/crm/[action]` | POST | `opportunity`, `move`, `lead`, `convert`, `contact`, `activity`, `activity-done`, `quote` | `crm.use` |
 | `/certificates/[action]` | POST | `issuer-save`, `issuer-file` (logo, cachet, signature), `issuer-submit`, `issuer-attach`, `issuer-review` (ACADEMY_MANAGE, autre personne que le déclarant), `tb-signatory-save` (SUPER_ADMIN), `course-cosigner` (ACADEMY_MANAGE), `consultant-claim`, `consultant-revoke` (EXPERTS_VERIFY) | Selon action |

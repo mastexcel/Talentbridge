@@ -1,4 +1,5 @@
 /** Préparation des données d'affichage d'un certificat : liens signés vers les images et QR code. */
+import { certificateWording } from "@/domain/academy";
 import QRCode from "qrcode";
 import { env } from "@/infrastructure/env";
 import { signFileLink } from "@/application/file.service";
@@ -24,6 +25,7 @@ export function academyProps(c: { code: string; holderName: string; courseTitle:
     issuer: { name: i.name, tagline: i.tagline, logoUrl: imageUrl(i.logoFileId), sealUrl: imageUrl(i.sealFileId), signatory: { name: i.signatoryName, title: i.signatoryTitle, organization: i.name, signatureUrl: imageUrl(i.signatureFileId) } },
     tb: { name: snap.tb.fullName, title: snap.tb.title, organization: "Talent Bridge Academy", signatureUrl: imageUrl(snap.tb.signatureFileId) },
     qrDataUrl,
+    wording: certificateWording(snap.kind, snap.format),
     specimen,
     revoked: !!c.revokedAt,
   };

@@ -6,6 +6,7 @@
  * Gabarit fixe 1536 × 1024 mis à l'échelle de la largeur disponible (unités de conteneur) :
  * rendu identique sur ordinateur, tablette (portrait / paysage) et téléphone.
  */
+import { certificateWording, type CertificateWording } from "@/domain/academy";
 import { Briefcase, Cpu, GraduationCap, HeartPulse, Landmark, Leaf, LineChart, ShieldCheck, Sprout, Wallet, Zap, FileText, Award } from "lucide-react";
 import { cn } from "../cn";
 import { CONSULTANT_CHECK_LABELS, type ConsultantCheck } from "@/domain/certificates";
@@ -106,13 +107,16 @@ export interface AcademyCertificateProps {
   issuer: { name: string; tagline: string | null; logoUrl: string | null; sealUrl: string | null; signatory: SignatoryView };
   tb: SignatoryView;
   qrDataUrl: string;
+  /** Libellés selon le type (formation, séminaire) et le format ; défaut : formation en ligne. */
+  wording?: CertificateWording;
   specimen?: boolean;
   revoked?: boolean;
 }
 
 export function AcademyCertificate(p: AcademyCertificateProps) {
+  const w = p.wording ?? certificateWording();
   return (
-    <Frame specimen={p.specimen} revoked={p.revoked} label={`Certificat de formation en ligne délivré à ${p.holderName} pour « ${p.courseTitle} », numéro ${p.code}`}>
+    <Frame specimen={p.specimen} revoked={p.revoked} label={`Certificat ${w.subtitle.toLowerCase()} délivré à ${p.holderName} pour « ${p.courseTitle} », numéro ${p.code}`}>
       {/* Cadre bordeaux + filet doré */}
       <div className="absolute" style={{ inset: u(22), border: `${u(10)} solid #7B1F2B` }} />
       <div className="absolute" style={{ inset: u(42), border: `${u(2)} solid ${GOLD}` }} />
@@ -139,7 +143,7 @@ export function AcademyCertificate(p: AcademyCertificateProps) {
         </div>
 
         <p className="font-[family-name:var(--font-cinzel)] font-bold uppercase text-bordeaux-700" style={{ fontSize: u(108), letterSpacing: u(10), lineHeight: 1, marginTop: u(14) }}>Certificat</p>
-        <p className="font-[family-name:var(--font-cinzel)] uppercase" style={{ fontSize: u(32), letterSpacing: u(9), color: NAVY, marginTop: u(8) }}>De formation en ligne</p>
+        <p className="font-[family-name:var(--font-cinzel)] uppercase" style={{ fontSize: u(32), letterSpacing: u(9), color: NAVY, marginTop: u(8) }}>{w.subtitle}</p>
         <div style={{ width: u(600), height: u(2), background: GOLD, margin: `${u(10)} 0` }} />
         <p className="font-[family-name:var(--font-cinzel)] uppercase" style={{ fontSize: u(17), letterSpacing: u(5), color: NAVY }}>Talent Bridge Academy</p>
         <p className="text-center uppercase" style={{ fontSize: u(13), letterSpacing: u(3), color: NAVY, maxWidth: u(900) }}>En partenariat avec {p.issuer.name}</p>
@@ -147,12 +151,12 @@ export function AcademyCertificate(p: AcademyCertificateProps) {
 
         <p className="font-[family-name:var(--font-playfair)] font-bold italic text-bordeaux-700" style={{ fontSize: u(68), lineHeight: 1.1, marginTop: u(6) }}>{p.holderName}</p>
         <div style={{ width: u(820), height: u(2), background: GOLD }} />
-        <p style={{ fontSize: u(20), color: NAVY, marginTop: u(10) }}>a suivi avec succès la formation en ligne</p>
+        <p style={{ fontSize: u(20), color: NAVY, marginTop: u(10) }}>{w.body}</p>
         <p className="text-center font-[family-name:var(--font-playfair)] font-bold" style={{ fontSize: u(32), color: NAVY, maxWidth: u(1200), lineHeight: 1.2 }}>{p.courseTitle}</p>
-        <p style={{ fontSize: u(19), color: NAVY }}>et a satisfait à l&apos;ensemble des exigences pédagogiques et des évaluations requises.</p>
+        <p style={{ fontSize: u(19), color: NAVY }}>{w.closing}</p>
 
         <div style={{ marginTop: u(22) }}>
-          <InfoRow items={[["Durée de la formation", p.durationHours ? `${p.durationHours} heure${p.durationHours > 1 ? "s" : ""}` : "—"], ["Date d'obtention", fmtDate(p.issuedAt)], ["Numéro du certificat", p.code]]} />
+          <InfoRow items={[[w.durationLabel, p.durationHours ? `${p.durationHours} heure${p.durationHours > 1 ? "s" : ""}` : "—"], ["Date d'obtention", fmtDate(p.issuedAt)], ["Numéro du certificat", p.code]]} />
         </div>
 
         {/* Signatures, cachet de l'institution, QR code */}

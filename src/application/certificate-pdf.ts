@@ -2,6 +2,7 @@
  * Certificats au format PDF (A4 paysage), même composition que l'affichage écran.
  * Coordonnées exprimées dans le gabarit 1536 × 1024 puis converties en points PDF.
  */
+import { certificateWording } from "@/domain/academy";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import QRCode from "qrcode";
@@ -169,17 +170,18 @@ export async function academyCertificatePdf(cert: Extract<PublicCertificate, { t
   if (i.tagline) left(c, i.tagline.toUpperCase(), 965, 125 + n * 28 + 4, 12, c.fonts.sans);
   // Corps
   centered(c, "CERTIFICAT", 768, 330, 100, c.fonts.serifBold, BORDEAUX, { spacing: 10 });
-  centered(c, "DE FORMATION EN LIGNE", 768, 378, 30, c.fonts.serif, NAVY, { spacing: 8 });
+  const w = certificateWording(snap.kind, snap.format);
+  centered(c, w.subtitle.toUpperCase(), 768, 378, 30, c.fonts.serif, NAVY, { spacing: 8 });
   hline(c, 468, 1068, 395);
   centered(c, "TALENT BRIDGE ACADEMY", 768, 420, 17, c.fonts.serif, NAVY, { spacing: 4 });
   centered(c, `EN PARTENARIAT AVEC ${i.name.toUpperCase()}`, 768, 440, 13, c.fonts.sans, NAVY, { spacing: 2, maxW: 1000 });
   centered(c, "ATTESTENT QUE", 768, 460, 13, c.fonts.sans, NAVY, { spacing: 2 });
   centered(c, cert.holderName, 768, 528, 64, c.fonts.serifBoldItalic, BORDEAUX);
   hline(c, 358, 1178, 545);
-  centered(c, "a suivi avec succès la formation en ligne", 768, 575, 20, c.fonts.serif);
+  centered(c, w.body, 768, 575, 20, c.fonts.serif);
   const tl = centered(c, cert.courseTitle, 768, 610, 32, c.fonts.serifBold, NAVY, { maxW: 1200, lineH: 36 });
-  centered(c, "et a satisfait à l'ensemble des exigences pédagogiques et des évaluations requises.", 768, 610 + tl * 36 + 4, 19, c.fonts.serif);
-  infoRow(c, 768, 735, [["Durée de la formation", snap.durationHours ? `${snap.durationHours} heure${snap.durationHours > 1 ? "s" : ""}` : "-"], ["Date d'obtention", fmtDate(cert.issuedAt)], ["Numéro du certificat", cert.code]], 330);
+  centered(c, w.closing, 768, 610 + tl * 36 + 4, 19, c.fonts.serif, NAVY, { maxW: 1200 });
+  infoRow(c, 768, 735, [[w.durationLabel, snap.durationHours ? `${snap.durationHours} heure${snap.durationHours > 1 ? "s" : ""}` : "-"], ["Date d'obtention", fmtDate(cert.issuedAt)], ["Numéro du certificat", cert.code]], 330);
   // Signatures et cachet
   signature(c, sigIssuer, 400, 800, i.signatoryName, i.signatoryTitle, i.name);
   fit(c, seal, 670, 790, 190, 190);
