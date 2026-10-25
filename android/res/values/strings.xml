@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Talent Bridge</string>
+    <!-- Site ouvert par l'application (instance de démonstration ; à remplacer par l'adresse de production). -->
+    <string name="site_url">https://talentbridge-demo.onrender.com/?source=android</string>
+    <string name="site_host">talentbridge-demo.onrender.com</string>
+</resources>

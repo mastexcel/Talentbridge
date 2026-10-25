@@ -48,3 +48,8 @@ next-env.d.ts
 
 /storage
 /storage-test
+
+# Application Android : sorties de construction et clés de signature (jamais dans le dépôt)
+android/build/
+*.jks
+*.keystore
