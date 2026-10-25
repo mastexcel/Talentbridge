@@ -30,8 +30,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   output: "standalone",
-  // Visuels officiels (textes et logos peints) : compression légère pour rester nets.
-  images: { qualities: [75, 92], formats: ["image/avif", "image/webp"] },
+  // Visuels officiels : déclinaisons WebP pré-calculées (scripts/brand/optimize-visuals.mts),
+  // servies sans calcul à chaque visite (hébergement modeste, mobile).
+  images: { loader: "custom", loaderFile: "./src/lib/image-loader.ts" },
   serverExternalPackages: ["exceljs", "pdf-lib"],
   async headers() {
     return [

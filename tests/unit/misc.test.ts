@@ -78,3 +78,19 @@ describe("texte", () => {
     expect(renderTemplate("Bonjour {{prenom}}, {{inconnu}}!", { prenom: "Awa" })).toBe("Bonjour Awa, !");
   });
 });
+
+describe("loader d'images", () => {
+  it("sert les visuels depuis leurs déclinaisons WebP pré-calculées, le reste tel quel", async () => {
+    const { default: loader } = await import("@/lib/image-loader");
+    const { existsSync } = await import("node:fs");
+    expect(loader({ src: "/visuels/accueil-hero.png", width: 640 })).toBe("/optimized/visuels/accueil-hero-640.webp");
+    expect(loader({ src: "/visuels/accueil-hero.png", width: 750 })).toBe("/optimized/visuels/accueil-hero-1080.webp");
+    expect(loader({ src: "/visuels/accueil-hero.png", width: 3840 })).toBe("/optimized/visuels/accueil-hero-1920.webp");
+    expect(loader({ src: "/backgrounds/connexion.webp", width: 1080 })).toBe("/backgrounds/connexion.webp");
+    // Chaque visuel a toutes ses déclinaisons (sinon : relancer scripts/brand/optimize-visuals.mts)
+    const { readdirSync } = await import("node:fs");
+    for (const f of readdirSync("public/visuels").filter((x) => x.endsWith(".png"))) {
+      for (const w of [640, 1080, 3840]) expect(existsSync(`public${loader({ src: `/visuels/${f}`, width: w })}`)).toBe(true);
+    }
+  });
+});
