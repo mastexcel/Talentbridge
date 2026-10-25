@@ -38,6 +38,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/:path*", headers: securityHeaders },
       { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
+      // Service worker de l'application installable : toujours revalidé pour diffuser les mises à jour.
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache" }, { key: "Content-Type", value: "application/javascript; charset=utf-8" }] },
     ];
   },
 };

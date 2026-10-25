@@ -55,7 +55,7 @@ export default async function PublicLayout({ children }: { children: React.React
           {[
             { title: t("footer.platform"), links: [["Trouver un expert", "/experts"], ["Missions", "/missions"], ["Appels d'offres & AMI", "/appels-offres"], ["Academy", "/academy"], ["Communauté", "/communaute"]] },
             { title: t("footer.solutions"), links: [["Consultants", "/inscription/consultant"], ["Cabinets de conseil", "/cabinets"], ["Entreprises", "/entreprises"], ["ONG & institutions", "/ong-institutions"], ["Tarifs", "/tarifs"]] },
-            { title: t("footer.company"), links: [["À propos", "/a-propos"], ["Notre mission", "/notre-mission"], ["Nos services", "/services"], ["FAQ", "/faq"], ["Contact", "/contact"], ["Vérifier un certificat", "/certificats"]] },
+            { title: t("footer.company"), links: [["À propos", "/a-propos"], ["Notre mission", "/notre-mission"], ["Nos services", "/services"], ["FAQ", "/faq"], ["Contact", "/contact"], ["Vérifier un certificat", "/certificats"], ["Application mobile", "/application"]] },
           ].map((col) => (
             <div key={col.title}>
               <p className="font-display font-bold text-white">{col.title}</p>

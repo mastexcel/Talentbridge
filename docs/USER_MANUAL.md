@@ -41,6 +41,15 @@
 3. **Aperçu** : « Aperçu du certificat (spécimen) » montre le rendu exact avec vos éléments.
 4. **Mise en ligne** : possible lorsque l'institution est validée, que Talent Bridge a désigné son cosignataire et, pour les formats en sessions, qu'au moins une session à venir est programmée ; la liste de ce qui manque est affichée tant que ce n'est pas le cas.
 
+## Application mobile
+
+Talent Bridge s'installe comme une application, gratuitement et sans magasin d'applications (page `/application`) :
+- **Android (Chrome)** : bannière « Installer », ou menu ⋮ › « Installer l'application » ;
+- **iPhone / iPad (Safari)** : Partager › « Sur l'écran d'accueil » ;
+- **Ordinateur (Chrome, Edge)** : icône d'installation dans la barre d'adresse.
+
+L'application s'ouvre en plein écran, se met à jour automatiquement et affiche un message clair hors connexion. Aucune donnée personnelle n'est conservée sur l'appareil.
+
 ## Affichage
 
 Toutes les interfaces s'adaptent à l'ordinateur, à la tablette (portrait et paysage) et au téléphone. Les certificats conservent leur mise en page sur tous les écrans ; sur téléphone, les informations clés sont affichées en clair au-dessus du certificat et le PDF est téléchargeable.

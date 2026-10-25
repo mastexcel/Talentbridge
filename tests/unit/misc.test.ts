@@ -94,3 +94,20 @@ describe("loader d'images", () => {
     }
   });
 });
+
+describe("application installable", () => {
+  it("manifeste complet (nom, plein écran, icônes 192/512 et maskable présentes)", async () => {
+    const { default: manifest } = await import("@/app/manifest");
+    const { existsSync, readFileSync } = await import("node:fs");
+    const m = manifest();
+    expect(m).toMatchObject({ name: "Talent Bridge", display: "standalone", start_url: expect.stringMatching(/^\//), lang: "fr" });
+    for (const size of ["192x192", "512x512"]) expect(m.icons?.some((i) => i.sizes === size && i.purpose === "any")).toBe(true);
+    expect(m.icons?.some((i) => i.purpose === "maskable")).toBe(true);
+    for (const i of m.icons ?? []) expect(existsSync(`public${i.src}`)).toBe(true);
+    // Service worker : page hors connexion pré-chargée, API jamais interceptée
+    const sw = readFileSync("public/sw.js", "utf8");
+    expect(sw).toContain('"/hors-ligne.html"');
+    expect(existsSync("public/hors-ligne.html")).toBe(true);
+    expect(sw).toMatch(/pathname\.startsWith\("\/api\/"\)\) return/);
+  });
+});

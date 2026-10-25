@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/ui/Toast";
+import { InstallAppBanner, PwaRegister } from "@/ui/InstallApp";
 import { getLocale } from "@/i18n/server";
 
 /** Typographies auto-hébergées par Next (aucun appel externe côté client). */
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
   applicationName: "Talent Bridge",
   ...(hostedDemo ? { robots: { index: false, follow: false } } : {}),
   icons: { apple: "/brand/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Talent Bridge", statusBarStyle: "default" },
   openGraph: { title: "Talent Bridge", description: "Des experts d'aujourd'hui pour les défis de demain.", locale: "fr_FR", siteName: "Talent Bridge", type: "website", images: [{ url: "/brand/tb-logo.png", width: 1600, height: 406 }] },
 };
 
@@ -37,6 +39,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </p>
         )}
         <ToastProvider>{children}</ToastProvider>
+        <PwaRegister />
+        <InstallAppBanner />
       </body>
     </html>
   );
