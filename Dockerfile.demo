@@ -16,9 +16,11 @@ COPY prisma ./prisma
 RUN npm ci
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production DEMO_SEED=true TB_HOSTED_DEMO=true ALLOW_MOCK_PAYMENTS=true STORAGE_LOCAL_DIR=/app/storage
+# Copies par fusion (et non dans un sous-dossier) : Next crée déjà standalone/public pour les fichiers lus par le serveur.
 RUN npm run build \
-  && cp -r .next/static .next/standalone/.next/static \
-  && cp -r public .next/standalone/public \
+  && mkdir -p .next/standalone/.next/static .next/standalone/public \
+  && cp -r .next/static/. .next/standalone/.next/static/ \
+  && cp -r public/. .next/standalone/public/ \
   && mkdir -p /app/storage
 ENV PORT=3000 HOSTNAME=0.0.0.0
 EXPOSE 3000
