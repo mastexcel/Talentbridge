@@ -2,7 +2,9 @@
  * Les 14 parcours critiques du cahier des charges, enchaînés dans un vrai navigateur
  * sur l'application construite (base de démonstration seedée).
  */
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 
 const PW = process.env.DEMO_PASSWORD ?? "Demo2026!TB";
 const stamp = Date.now();
@@ -317,5 +319,31 @@ test.describe.serial("Parcours critiques Talent Bridge", () => {
     await page.goto("/espace/formations", { waitUntil: "networkidle" });
     await expect(page.getByRole("link", { name: /genre et inclusion/ })).toBeVisible();
     await expect(page.getByText("Séminaire").first()).toBeVisible();
+  });
+
+  test("16. Remplir son profil à partir de son CV", async ({ page }) => {
+    // CV PDF réel (texte de tests/fixtures/cv-exemple.txt)
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const pageA4 = doc.addPage([595, 842]);
+    readFileSync("tests/fixtures/cv-exemple.txt", "utf8").split("\n").forEach((l, i) => pageA4.drawText(l.replace(/—/g, "-"), { x: 40, y: 800 - i * 14, size: 10, font }));
+    const cv = Buffer.from(await doc.save());
+
+    await login(page, consultantEmail, password);
+    await page.goto("/espace/profil", { waitUntil: "networkidle" });
+    await page.locator('input[type=file][aria-label="Déposer mon CV"]').setInputFiles({ name: "cv-prenom-nom.pdf", mimeType: "application/pdf", buffer: cv });
+    await expect(page.getByText("Fichier déposé.")).toBeVisible();
+    await page.reload({ waitUntil: "networkidle" });
+    await follow(page, "Remplir mon profil depuis mon CV");
+    await expect(page.getByRole("heading", { name: "Remplir mon profil depuis mon CV" })).toBeVisible();
+    await expect(page.getByText("Expériences professionnelles (3)")).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Employeur" }).first()).toHaveValue("Programme National de Nutrition");
+    // L'expert corrige un intitulé avant d'enregistrer
+    await page.getByRole("textbox", { name: "Intitulé du poste" }).first().fill("Responsable du suivi-évaluation");
+    await page.getByRole("button", { name: "Enregistrer dans mon profil" }).click();
+    await page.waitForURL(/\/espace\/profil\?import=1/);
+    await expect(page.getByText("Les informations choisies dans votre CV ont été ajoutées.")).toBeVisible();
+    await expect(page.getByText("Responsable du suivi-évaluation").first()).toBeVisible();
+    await expect(page.getByText("Master en économie du développement").first()).toBeVisible();
   });
 });

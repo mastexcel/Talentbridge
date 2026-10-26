@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
   // Visuels officiels : déclinaisons WebP pré-calculées (scripts/brand/optimize-visuals.mts),
   // servies sans calcul à chaque visite (hébergement modeste, mobile).
   images: { loader: "custom", loaderFile: "./src/lib/image-loader.ts" },
-  serverExternalPackages: ["exceljs", "pdf-lib"],
+  serverExternalPackages: ["exceljs", "pdf-lib", "unpdf"],
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

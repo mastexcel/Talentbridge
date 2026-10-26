@@ -152,6 +152,20 @@ export const qualificationSchema = z.object({
   fileId: optionalText(40),
 });
 
+/** Import depuis le CV : uniquement les éléments cochés et relus par l'expert. */
+export const cvImportSchema = z.object({
+  headline: optionalText(160),
+  bio: optionalText(2000),
+  yearsExperience: optionalNumber(z.number().int().min(0).max(60)),
+  countryCode: country.optional().nullable(),
+  languages: z.array(z.enum(["fr", "en", "pt", "ar", "es", "sw"])).max(6).default([]),
+  domainIds: z.array(z.string().min(1).max(40)).max(20).default([]),
+  skills: z.array(z.object({ skillId: z.string().min(1).max(40), level: z.coerce.number().int().min(1).max(5), years: z.coerce.number().int().min(0).max(60) })).max(60).default([]),
+  experiences: z.array(experienceSchema.pick({ title: true, employer: true, startDate: true, endDate: true, description: true })).max(30).default([]),
+  qualifications: z.array(qualificationSchema.pick({ kind: true, title: true, institution: true, year: true })).max(30).default([]),
+});
+export type CvImportInput = z.infer<typeof cvImportSchema>;
+
 export const referenceSchema = z.object({
   contactName: trimmed(2, 120),
   contactOrg: trimmed(2, 160),

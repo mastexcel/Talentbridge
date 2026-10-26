@@ -6,10 +6,11 @@ import { clearSessionCookie } from "@/infrastructure/http/cookies";
 import { requireExpert } from "@/application/access";
 import { addItem, removeItem, setProfileFile, setSkills, toggleFavorite, updateProfile } from "@/application/expert.service";
 import { toggleSaveMission } from "@/application/mission.service";
+import { applyCvImport } from "@/application/cv-import.service";
 import { markRead, setPreference, NOTIFICATION_TYPES, type NotificationType } from "@/application/notification.service";
 import { deleteAccount, setConsent } from "@/application/privacy.service";
 import { createOrganization } from "@/application/organization.service";
-import { experienceSchema, expertProfileSchema, expertSkillsSchema, organizationSchema, portfolioSchema, qualificationSchema, referenceSchema, slotSchema } from "@/application/schemas";
+import { cvImportSchema, experienceSchema, expertProfileSchema, expertSkillsSchema, organizationSchema, portfolioSchema, qualificationSchema, referenceSchema, slotSchema } from "@/application/schemas";
 
 const ITEM_SCHEMAS = { experience: experienceSchema, qualification: qualificationSchema, reference: referenceSchema, portfolio: portfolioSchema, slot: slotSchema };
 type Kind = keyof typeof ITEM_SCHEMAS;
@@ -26,6 +27,7 @@ export const POST = actions<P>({
     },
   }),
   "item-remove": defineAction({ schema: z.object({ kind: z.enum(["experience", "qualification", "reference", "portfolio", "slot"]), id: z.string().min(1) }), run: async ({ user }, b) => removeItem(requireExpert(user).expertId, b.kind, b.id) }),
+  "cv-import": defineAction({ schema: cvImportSchema, run: async ({ user }, b) => applyCvImport(user, requireExpert(user).expertId, b) }),
   "profile-file": defineAction({ schema: z.object({ field: z.enum(["photoFileId", "cvFileId"]), fileId: z.string().min(1) }), run: async ({ user }, b) => setProfileFile(user, requireExpert(user).expertId, b.field, b.fileId) }),
   favorite: defineAction({ schema: z.object({ expertId: z.string().min(1) }), run: async ({ user }, b) => toggleFavorite(user.id, b.expertId) }),
   "save-mission": defineAction({ schema: z.object({ missionId: z.string().min(1) }), run: async ({ user }, b) => toggleSaveMission(user.id, b.missionId) }),

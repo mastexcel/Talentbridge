@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Trash2 } from "lucide-react";
+import { Trash2, Wand2 } from "lucide-react";
 import { prisma } from "@/infrastructure/db";
 import { requireExpertUser } from "@/lib/session";
 import { getMyProfile } from "@/application/expert.service";
@@ -12,6 +12,7 @@ import { Checkbox, Field, Input, Select, Textarea } from "@/ui/Field";
 import { Progress } from "@/ui/Stat";
 import { Badge } from "@/ui/Badge";
 import { Alert } from "@/ui/Feedback";
+import { ButtonLink } from "@/ui/Button";
 import { FileUpload } from "@/ui/FileUpload";
 import { SkillsEditor } from "@/ui/SkillsEditor";
 
@@ -24,7 +25,7 @@ function RemoveButton({ kind, id }: { kind: string; id: string }) {
   return <ActionButton action="/api/v1/me/item-remove" body={{ kind, id }} confirm="Supprimer cet élément de votre profil ?" variant="ghost" successMessage="Élément supprimé."><Trash2 className="h-4 w-4" /><span className="sr-only">Supprimer</span></ActionButton>;
 }
 
-export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ bienvenue?: string }> }) {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ bienvenue?: string; import?: string }> }) {
   const sp = await searchParams;
   const user = await requireExpertUser("/espace/profil");
   const [{ profile: p, completeness }, countries, domains, skills] = await Promise.all([
@@ -38,7 +39,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHeader title="Mon profil d'expert" description="Plus votre profil est complet et vérifié, plus il est recommandé aux organisations." />
-      {sp.bienvenue && <Alert tone="success" title="Bienvenue sur Talent Bridge !" className="mb-6">Complétez votre profil (60 % minimum) pour le soumettre à vérification. Votre profil est privé par défaut : choisissez « Publique » ou « Membres connectés » dans la visibilité pour apparaître dans l'annuaire et les recommandations.</Alert>}
+      {sp.bienvenue && <Alert tone="success" title="Bienvenue sur Talent Bridge !" className="mb-6">Complétez votre profil (60 % minimum) pour le soumettre à vérification. Gagnez du temps : déposez votre CV (rubrique « Photo et CV ») puis « Remplir mon profil depuis mon CV ». Votre profil est privé par défaut : choisissez « Publique » ou « Membres connectés » dans la visibilité pour apparaître dans l'annuaire et les recommandations.</Alert>}
+      {sp.import && <Alert tone="success" className="mb-6">Les informations choisies dans votre CV ont été ajoutées. Vérifiez votre profil et déposez les justificatifs de vos diplômes pour les faire vérifier.</Alert>}
       {!sp.bienvenue && p.visibility === "PRIVATE" && <Alert tone="info" className="mb-6">Votre profil est privé : il n'apparaît ni dans l'annuaire ni dans les recommandations du matching.</Alert>}
       <Card className="mb-6">
         <CardBody>
@@ -169,7 +171,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <CardHeader title="Photo et CV" />
             <CardBody className="space-y-4 text-sm">
               <div><p className="mb-1 font-semibold">Photo de profil</p><p className="mb-2 text-xs text-slate">{p.photoFileId ? "Photo enregistrée." : "Aucune photo."} PNG, JPG ou WebP, 10 Mo max.</p><FileUpload purpose="PHOTO" accept="image/png,image/jpeg,image/webp" label="Changer la photo" attach={{ action: "/api/v1/me/profile-file", body: { field: "photoFileId" } }} /></div>
-              <div><p className="mb-1 font-semibold">CV</p><p className="mb-2 text-xs text-slate">{p.cvFileId ? <a className="text-orange-700 underline" href={`/api/v1/files/${p.cvFileId}`}>Consulter mon CV</a> : "Aucun CV."} PDF ou DOCX. Visible uniquement par les organisations auxquelles vous candidatez.</p><FileUpload purpose="CV" accept=".pdf,.docx" label="Déposer mon CV" attach={{ action: "/api/v1/me/profile-file", body: { field: "cvFileId" } }} /></div>
+              <div><p className="mb-1 font-semibold">CV</p><p className="mb-2 text-xs text-slate">{p.cvFileId ? <a className="text-orange-700 underline" href={`/api/v1/files/${p.cvFileId}`}>Consulter mon CV</a> : "Aucun CV."} PDF ou DOCX. Visible uniquement par les organisations auxquelles vous candidatez.</p><FileUpload purpose="CV" accept=".pdf,.docx" label="Déposer mon CV" attach={{ action: "/api/v1/me/profile-file", body: { field: "cvFileId" } }} />{p.cvFileId && <div className="mt-3"><ButtonLink href="/espace/profil/import-cv" size="sm" variant="secondary"><Wand2 className="h-4 w-4" aria-hidden /> Remplir mon profil depuis mon CV</ButtonLink><p className="mt-1 text-xs text-slate">Expériences, diplômes, compétences et langues trouvés dans le CV, à relire avant enregistrement.</p></div>}</div>
             </CardBody>
           </Card>
           <Card><CardBody className="text-sm"><p className="font-semibold">Disponibilités détaillées</p><p className="mt-1 text-slate">Indiquez vos périodes déjà engagées : elles sont prises en compte par le matching.</p><a href="/espace/disponibilites" className="mt-2 inline-block font-semibold text-orange-700">Gérer mon calendrier →</a></CardBody></Card>
