@@ -46,6 +46,15 @@ Les visiteurs peuvent aussi créer leur propre compte (consultant, organisation,
 
 Pour une démo toujours disponible : passer le service en `starter` et la base en `basic-256mb` (dans `render.yaml` ou dans le tableau de bord Render ; offres payantes, voir les tarifs Render), et ajouter un disque monté sur `/app/storage` pour conserver les fichiers déposés.
 
+## Temps de démarrage
+
+Au démarrage, les données de démonstration ne sont rechargées que si les scripts de seed ou `DEMO_PASSWORD` ont changé (`scripts/demo-seed-state.mjs`) ; sinon le serveur démarre aussitôt après les migrations et les images de démonstration sont régénérées en arrière-plan.
+
+L'offre gratuite de Render met le service en veille après 15 minutes sans visite : la visite suivante affiche l'écran « Service waking up » pendant environ une minute. Pour l'éviter :
+
+- **Offre Starter** (payante) : service toujours actif ;
+- **ou surveillance externe gratuite** (par exemple UptimeRobot, intervalle 5 minutes) sur `https://<adresse>/api/v1/health` : les visites régulières empêchent la mise en veille. Un seul service actif en permanence reste dans les 750 heures mensuelles gratuites de Render.
+
 ## Mise à jour
 
 Chaque push sur la branche indiquée dans `render.yaml` (`branch`) redéploie la démo. Les données existantes sont conservées ; seules les données de démonstration manquantes sont ajoutées.

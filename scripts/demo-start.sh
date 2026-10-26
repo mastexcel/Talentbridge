@@ -16,8 +16,17 @@ fi
 
 echo "→ Migrations"
 npx prisma migrate deploy
-echo "→ Référentiels et données de démonstration (idempotent)"
-npx prisma db seed
+# Données de démonstration : rechargées seulement si les scripts de seed ou DEMO_PASSWORD ont changé
+# (le rechargement complet ralentissait chaque réveil de l'instance).
+if node scripts/demo-seed-state.mjs check; then
+  echo "→ Données de démonstration à jour"
+  # Images de démonstration (stockage effacé au redémarrage) : régénérées en arrière-plan, serveur déjà lancé.
+  ( sleep 20; npx tsx scripts/demo-restore-files.ts ) &
+else
+  echo "→ Référentiels et données de démonstration (idempotent)"
+  npx prisma db seed
+  node scripts/demo-seed-state.mjs mark || echo "Version des données non mémorisée (le prochain démarrage rechargera les données)"
+fi
 
 # Tâches planifiées (activation des inscriptions payées, relances, purge des sessions…).
 ( while true; do sleep 600; npm run --silent jobs || echo "Tâches planifiées : échec (nouvel essai dans 10 min)"; done ) &

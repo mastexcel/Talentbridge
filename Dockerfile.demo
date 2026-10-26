@@ -21,7 +21,8 @@ RUN npm run build \
   && mkdir -p .next/standalone/.next/static .next/standalone/public \
   && cp -r .next/static/. .next/standalone/.next/static/ \
   && cp -r public/. .next/standalone/public/ \
-  && mkdir -p /app/storage
+  && mkdir -p /app/storage \
+  && cat prisma/seed*.ts prisma/reference*.ts 2>/dev/null | sha256sum | cut -d" " -f1 > .seed-version
 ENV PORT=3000 HOSTNAME=0.0.0.0
 EXPOSE 3000
 CMD ["sh", "scripts/demo-start.sh"]
